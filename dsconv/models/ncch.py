@@ -33,8 +33,6 @@ class NCCHHeader:
     # 0x184-0x188: Reserved (4 bytes)
     flags: bytes  # 0x188-0x190: Flags (8 bytes)
     # 0x190-0x1A0: Plain region offset and length (16 bytes)
-    # 0x1A0-0x1A8: Logo region offset and length (8 bytes)
-    # 0x1A8-0x1B0: ExeFS offset and size (8 bytes)
     exefs_offset: int  # 0x1A0-0x1A4: ExeFS offset in media units
     exefs_size: int  # 0x1A4-0x1A8: ExeFS size in media units
     # 0x1A8-0x1B8: ExeFS hash region size and RomFS offset (16 bytes)
