@@ -1,0 +1,60 @@
+# Git attributes for 3dsconv project
+# Helps AI assistants and development tools understand file types
+
+# Documentation files - High priority for AI context
+*.md linguist-documentation
+agents.md linguist-documentation
+CONTRIBUTING.md linguist-documentation
+README.md linguist-documentation
+
+# Python source files
+*.py linguist-language=Python
+
+# Configuration files
+*.toml linguist-language=TOML
+*.yml linguist-language=YAML
+*.yaml linguist-language=YAML
+*.json linguist-language=JSON
+*.ini linguist-language=INI
+
+# Test files
+tests/** linguist-vendored=false
+
+# GitHub configuration
+.github/** linguist-vendored=false
+
+# Documentation
+docs/** linguist-documentation
+
+# Line endings
+* text=auto
+*.py text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.txt text eol=lf
+
+# Binary files
+*.bin binary
+*.cci binary
+*.cia binary
+*.3ds binary
+*.cxi binary
+*.cfa binary
+*.db binary
+
+# Exclude from exports
+.gitignore export-ignore
+.gitattributes export-ignore
+.github export-ignore
+venv/ export-ignore
+*.pyc export-ignore
+__pycache__/ export-ignore
+.pytest_cache/ export-ignore
+.coverage export-ignore
+htmlcov/ export-ignore
+dist/ export-ignore
+build/ export-ignore
+*.egg-info/ export-ignore

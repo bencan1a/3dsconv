@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: General Questions
+    url: https://github.com/ihaveamac/3dsconv/discussions
+    about: Ask questions and discuss the project with the community
+  - name: Security Vulnerability
+    url: https://github.com/ihaveamac/3dsconv/security/advisories/new
+    about: Report security vulnerabilities privately
