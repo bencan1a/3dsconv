@@ -34,6 +34,14 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "-p",
+        "--prod-keys",
+        metavar="path-to-prod-keys",
+        default=os.environ.get("PROD_KEYS_PATH"),
+        help="Path to prod.keys file containing encryption keys",
+    )
+
+    parser.add_argument(
         "--overwrite", action="store_true", help="Overwrite existing converted files"
     )
 
@@ -121,6 +129,91 @@ def show_progress(val, maxval):
     minval = min(val, maxval)
     sys.stdout.write(f"\r  {(minval / maxval) * 100:>5.1f}% {minval:>10} / {maxval}")
     sys.stdout.flush()
+
+
+def parse_prod_keys(prod_keys_path: str) -> dict[str, str]:
+    """
+    Parse a prod.keys file and extract key-value pairs.
+
+    The prod.keys file format is simple:
+    - Lines starting with # are comments
+    - Empty lines are ignored
+    - Key-value pairs are in the format: key=value
+    - Values are hexadecimal strings without 0x prefix
+
+    Args:
+        prod_keys_path: Path to the prod.keys file
+
+    Returns:
+        Dictionary mapping key names to their hexadecimal values
+
+    Raises:
+        FileNotFoundError: If the prod.keys file doesn't exist
+        ValueError: If the file contains invalid key-value pairs
+    """
+    if not os.path.isfile(prod_keys_path):
+        raise FileNotFoundError(f"prod.keys file not found: {prod_keys_path}")
+
+    keys = {}
+    with open(prod_keys_path) as f:
+        for line_num, line in enumerate(f, start=1):
+            # Strip whitespace and skip empty lines and comments
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+
+            # Parse key=value pairs
+            if "=" not in line:
+                raise ValueError(
+                    f"Invalid format in prod.keys at line {line_num}: expected 'key=value'"
+                )
+
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip()
+
+            # Validate that value is a valid hex string
+            if not value:
+                raise ValueError(f"Empty value for key '{key}' at line {line_num}")
+
+            try:
+                int(value, 16)
+            except ValueError as e:
+                raise ValueError(
+                    f"Invalid hexadecimal value for key '{key}' at line {line_num}: {value}"
+                ) from e
+
+            keys[key] = value
+
+    return keys
+
+
+def get_slot0x2c_key_from_prod_keys(prod_keys_path: str) -> int:
+    """
+    Extract the slot 0x2C key from a prod.keys file.
+
+    Args:
+        prod_keys_path: Path to the prod.keys file
+
+    Returns:
+        The slot 0x2C key as an integer
+
+    Raises:
+        FileNotFoundError: If the prod.keys file doesn't exist
+        ValueError: If the file is invalid or doesn't contain the required key
+        KeyError: If slot0x2CKey is not found in the file
+    """
+    keys = parse_prod_keys(prod_keys_path)
+
+    if "slot0x2CKey" not in keys:
+        raise KeyError("slot0x2CKey not found in prod.keys file")
+
+    key_hex = keys["slot0x2CKey"]
+
+    # Convert hex string to integer
+    key_int = int(key_hex, 16)
+
+    return key_int
 
 
 # Note: print_v() and v() depend on global args and will be tested via mocking

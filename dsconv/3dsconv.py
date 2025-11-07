@@ -45,6 +45,14 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "-p",
+        "--prod-keys",
+        metavar="path-to-prod-keys",
+        default=os.environ.get("PROD_KEYS_PATH"),
+        help="Path to prod.keys file containing encryption keys",
+    )
+
+    parser.add_argument(
         "--overwrite", action="store_true", help="Overwrite existing converted files"
     )
 
@@ -242,12 +250,40 @@ if args.use_deprecated:
         "for more details."
     )
 
-# print if pyaes is found, and search for boot9 if it is
+# print if pyaes is found, and search for keys
 # then get the original NCCH key from it
 keys_set = False
 orig_ncch_key = 0
 if pyaes_found:
-    print_v("pyaes found, Searching for protected ARM9 bootROM")
+    # Helper functions for loading keys
+    def set_keys_from_prod_keys(prod_keys_file):
+        try:
+            from dsconv.utils import get_slot0x2c_key_from_prod_keys
+
+            global keys_set, orig_ncch_key
+            print_v(f"Attempting to load keys from {prod_keys_file}...")
+            orig_ncch_key = get_slot0x2c_key_from_prod_keys(prod_keys_file)
+            print_v("Successfully loaded slot0x2CKey from prod.keys")
+            keys_set = True
+            return True
+        except FileNotFoundError:
+            print_v(f"prod.keys file not found: {prod_keys_file}")
+            return False
+        except KeyError:
+            print_v("slot0x2CKey not found in prod.keys file")
+            return False
+        except ValueError as e:
+            print_v(f"Error parsing prod.keys file: {e}")
+            return False
+
+    def check_prod_keys_path(path):
+        if not keys_set and path:
+            print_v(f"... {path}: ", end="")
+            if os.path.isfile(path):
+                return set_keys_from_prod_keys(path)
+            else:
+                print_v("File doesn't exist.")
+        return False
 
     def set_keys(boot9_file):
         keys_offset = 0
@@ -273,7 +309,7 @@ if pyaes_found:
                 return
             print_v("Corrupt file (invalid key).")
 
-    def check_path(path):
+    def check_boot9_path(path):
         if not keys_set:
             print_v(f"... {path}: ", end="")
             if os.path.isfile(path):
@@ -281,15 +317,49 @@ if pyaes_found:
             else:
                 print_v("File doesn't exist.")
 
-    # check supplied path by boot9_path or --boot9
-    if args.boot9:
-        check_path(args.boot9)
-    check_path("boot9.bin")
-    check_path("boot9_prot.bin")
-    check_path(os.path.expanduser("~") + "/.3ds/boot9.bin")
-    check_path(os.path.expanduser("~") + "/.3ds/boot9_prot.bin")
+    # Determine which key source to use based on command-line arguments
+    if args.prod_keys and args.boot9:
+        error("Cannot specify both --prod-keys and --boot9. Please use only one.")
+        sys.exit(1)
+    elif args.prod_keys:
+        # User specified --prod-keys, so only search for prod.keys file
+        print_v("Using prod.keys specified on command line")
+        check_prod_keys_path(args.prod_keys)
+    elif args.boot9:
+        # User specified --boot9, so only search for boot9 file
+        print_v("Using boot9 specified on command line")
+        check_boot9_path(args.boot9)
+    else:
+        # Neither specified, search for prod.keys first, then boot9
+        print_v("No key source specified, searching for prod.keys first...")
+        check_prod_keys_path("prod.keys")
+        if not keys_set:
+            check_prod_keys_path(os.path.expanduser("~") + "/.3ds/prod.keys")
+
+        if not keys_set:
+            print_v("prod.keys not found, searching for protected ARM9 bootROM")
+            check_boot9_path("boot9.bin")
+            check_boot9_path("boot9_prot.bin")
+            check_boot9_path(os.path.expanduser("~") + "/.3ds/boot9.bin")
+            check_boot9_path(os.path.expanduser("~") + "/.3ds/boot9_prot.bin")
+
     if not keys_set:
-        error("bootROM not found, encryption will not be supported")
+        if args.prod_keys:
+            error(f"Could not load keys from specified prod.keys file: {args.prod_keys}")
+        elif args.boot9:
+            error(f"Could not load keys from specified boot9 file: {args.boot9}")
+        else:
+            error(
+                "Could not find valid prod.keys or boot9 file, encryption will not be supported.\n"
+                "Searched for prod.keys in:\n"
+                "  - prod.keys\n"
+                "  - ~/.3ds/prod.keys\n"
+                "Searched for boot9 in:\n"
+                "  - boot9.bin\n"
+                "  - boot9_prot.bin\n"
+                "  - ~/.3ds/boot9.bin\n"
+                "  - ~/.3ds/boot9_prot.bin"
+            )
 else:
     error("pyaes not found, encryption will not be supported")
 

@@ -1,7 +1,7 @@
 # 3dsconv
 `3dsconv.py` is a Python 3 script that converts Nintendo 3DS CTR Cart Image files (CCI, ".cci", ".3ds") to the CTR Importable Archive format (CIA).
 
-3dsconv can detect if a CCI is decrypted, encrypted using original NCCH (slot 0x2C), or encrypted using zerokey. Encryption requires [pyaes](https://github.com/ricmoo/pyaes) (`pip install pyaes`). Original NCCH encryption requires [a copy of the protected ARM9 bootROM](#encryption).
+3dsconv can detect if a CCI is decrypted, encrypted using original NCCH (slot 0x2C), or encrypted using zerokey. Encryption requires [pyaes](https://github.com/ricmoo/pyaes) (`pip install pyaes`). Original NCCH encryption requires either [a prod.keys file](#encryption) or [a copy of the protected ARM9 bootROM](#encryption).
 
 [Decrypt9WIP](https://github.com/d0k3/Decrypt9WIP) and [GodMode9](https://github.com/d0k3/GodMode9) can dump game cards to CIA directly now, rendering this tool partially obsolete. It can still be used for existing game dumps, however.
 
@@ -17,7 +17,8 @@ python3 3dsconv.py [options] game.3ds [game.3ds ...]
 ```
 
 * `--output=<dir>` - Save converted files in specified directory; default is current directory or value of variable `output-directory`
-* `--boot9=<file>` - Path to dump of protected ARM9 bootROM
+* `--boot9=<file>` - Path to dump of protected ARM9 bootROM (cannot be used with --prod-keys)
+* `--prod-keys=<file>` - Path to prod.keys file containing encryption keys (cannot be used with --boot9)
 * `--overwrite` - Overwrite existing converted files
 * `--ignore-bad-hashes` - Ignore invalid hashes and CCI files and convert anyway
 * `--ignore-encryption` - Ignore the encryption header value, assume the ROM as unencrypted
@@ -25,13 +26,31 @@ python3 3dsconv.py [options] game.3ds [game.3ds ...]
 * `--dev-keys` - Use developer-unit keys
 
 ## Encryption
-3dsconv requires the Nintendo 3DS full or protected ARM9 bootROM to decrypt files using Original NCCH encryption (slot 0x2C). The file is checked for in the order of:
+3dsconv requires encryption keys to decrypt files using Original NCCH encryption (slot 0x2C). You can provide these keys in one of two ways (but not both):
 
-* Value of option `--boot9=` or variable `boot9_path`, if set
+### Option 1: prod.keys file (Recommended)
+A prod.keys file contains the necessary encryption keys in a simple key=value format. 
+
+**When specified with `--prod-keys`:** Only the specified file is used.
+
+**When not specified:** The file is automatically searched for in the following order:
+* `prod.keys` in current working directory
+* `~/.3ds/prod.keys`
+
+The prod.keys file must contain at least the `slot0x2CKey` entry. See `prod.keys.example` for the format.
+
+### Option 2: boot9 bootROM
+Alternatively, you can provide the Nintendo 3DS full or protected ARM9 bootROM.
+
+**When specified with `--boot9`:** Only the specified file is used.
+
+**When not specified:** The file is automatically searched for in the following order:
 * `boot9.bin` (full) in current working directory
 * `boot9_prot.bin` (protected) in current working directory
 * `~/.3ds/boot9.bin` (full)
 * `~/.3ds/boot9_prot.bin` (protected)
+
+**Note:** If neither `--prod-keys` nor `--boot9` is specified, 3dsconv will search for prod.keys files first, then fall back to boot9 files if no prod.keys is found.
 
 boot9strap is required to dump. Setup can be found at [3DS Guide](https://3ds.guide/). Hold START+SELECT+X at boot to dump to `sdmc:/boot9strap/boot9.bin`.
 
