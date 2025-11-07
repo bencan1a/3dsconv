@@ -1,0 +1,126 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "3dsconv"
+version = "4.21"
+description = "Converts Nintendo 3DS CTR Cart Image files (CCI, .cci, .3ds) to the CTR Importable Archive format (CIA)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Ian", email = "ihaveamac@users.noreply.github.com"}
+]
+keywords = ["3ds", "nintendo", "cci", "cia", "converter", "3dsconv"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Games/Entertainment",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "pyaes>=1.6.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/ihaveamac/3dsconv"
+Repository = "https://github.com/ihaveamac/3dsconv"
+Issues = "https://github.com/ihaveamac/3dsconv/issues"
+
+[project.scripts]
+3dsconv = "dsconv.__main__:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+[tool.setuptools]
+packages = ["dsconv"]
+
+[tool.setuptools.package-data]
+dsconv = ["py.typed"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex (let's not be too strict)
+]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+exclude = [
+    "^venv/",
+    "^context_portal/",
+    "^build/",
+    "^dist/"
+]
+
+[tool.pyright]
+include = ["dsconv"]
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    "venv",
+    "env",
+    ".venv",
+    "context_portal",
+    "build",
+    "dist"
+]
+ignore = ["venv", "context_portal"]
+pythonVersion = "3.10"
+typeCheckingMode = "basic"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--cov=3dsconv",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]

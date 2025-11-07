@@ -107,7 +107,7 @@ def parse_args() -> argparse.Namespace:
 # check for pyaes which is used for crypto
 pyaes_found = False
 try:
-    import pyaes
+    import pyaes  # type: ignore[import-untyped]
     pyaes_found = True
 except ImportError:
     pass  # this is handled later
@@ -197,8 +197,7 @@ def error(*msg):
 def show_progress(val, maxval):
     # print() didn't do what I wanted so I'm doing this
     minval = min(val, maxval)
-    sys.stdout.write('\r  {:>5.1f}% {:>10} / {}'.format(
-        (minval / maxval) * 100, minval, maxval)
+    sys.stdout.write(f'\r  {(minval / maxval) * 100:>5.1f}% {minval:>10} / {maxval}'
     )
     sys.stdout.flush()
 
@@ -234,15 +233,15 @@ files = []
 for arg in args.game:
     to_add = glob.glob(arg)
     if len(to_add) == 0:
-        error('"{}" doesn\'t exist.'.format(arg))
+        error(f'"{arg}" doesn\'t exist.')
         total_files += 1
     else:
         for input_file in to_add:
             rom_name = os.path.basename(os.path.splitext(input_file)[0])
             cia_name = os.path.join(args.output, rom_name + '.cia')
             if not args.overwrite and os.path.isfile(cia_name):
-                error('"{}" already exists. Use `--overwrite\' to force'
-                        'conversion.'.format(cia_name))
+                error(f'"{cia_name}" already exists. Use `--overwrite\' to force'
+                        'conversion.')
                 continue
             total_files += 1
             files.append([input_file, rom_name, cia_name])
@@ -282,7 +281,7 @@ if pyaes_found:
 
     def check_path(path):
         if not keys_set:
-            print_v('... {}: '.format(path), end='')
+            print_v(f'... {path}: ', end='')
             if os.path.isfile(path):
                 set_keys(path)
             else:
@@ -313,15 +312,13 @@ if not files:
 
 for rom_file in files:
     with open(rom_file[0], 'rb') as rom:
-        print_v('----------\nProcessing {}...'.format(rom_file[0]))
+        print_v(f'----------\nProcessing {rom_file[0]}...')
         # check for NCSD magic
         # 3DS NAND dumps also have this
         rom.seek(0x100)
         ncsd_magic = rom.read(4)
         if ncsd_magic != b'NCSD':
-            error('"{}" is not a CCI file (missing NCSD magic).'.format(
-                rom_file[0]
-            ))
+            error(f'"{rom_file[0]}" is not a CCI file (missing NCSD magic).')
             continue
 
         # get title ID
@@ -336,28 +333,24 @@ for rom_file in files:
         # find Game Executable CXI
         game_cxi_offset = struct.unpack('<I', rom.read(4))[0] * mu
         game_cxi_size = struct.unpack('<I', rom.read(4))[0] * mu
-        print_v('\nGame Executable CXI Size: {:X}'.format(game_cxi_size))
+        print_v(f'\nGame Executable CXI Size: {game_cxi_size:X}')
 
         # find Manual CFA
         manual_cfa_offset = struct.unpack('<I', rom.read(4))[0] * mu
         manual_cfa_size = struct.unpack('<I', rom.read(4))[0] * mu
-        print_v('Manual CFA Size: {:X}'.format(manual_cfa_size))
+        print_v(f'Manual CFA Size: {manual_cfa_size:X}')
 
         # find Download Play child CFA
         dlpchild_cfa_offset = struct.unpack('<I', rom.read(4))[0] * mu
         dlpchild_cfa_size = struct.unpack('<I', rom.read(4))[0] * mu
-        print_v('Download Play child CFA Size: {:X}\n'.format(
-            dlpchild_cfa_size
-        ))
+        print_v(f'Download Play child CFA Size: {dlpchild_cfa_size:X}\n')
 
         # check for NCCH magic
         # prevents NAND dumps from being "converted"
         rom.seek(game_cxi_offset + 0x100)
         ncch_magic = rom.read(4)
         if ncch_magic != b'NCCH':
-            error('"{}" is not a CCI file (missing NCCH magic).'.format(
-                rom_file[0]
-            ))
+            error(f'"{rom_file[0]}" is not a CCI file (missing NCCH magic).')
             continue
 
         # get the encryption type
@@ -369,11 +362,11 @@ for rom_file in files:
 
         if encrypted:
             if not keys_set:
-                error('"{}" is encrypted using Original NCCH and pyaes or '
+                error(f'"{rom_file[0]}" is encrypted using Original NCCH and pyaes or '
                       'the bootROM were not found, therefore this can not be '
                       'converted. See the README at '
                       'https://github.com/ihaveamac/3dsconv for details.'
-                      .format(rom_file[0]))
+                      )
                 continue
             else:
                 # get normal key to decrypt parts of the file
@@ -447,12 +440,12 @@ for rom_file in files:
         # Game Executable NCCH Header
         print_v('\nReading NCCH Header of Game Executable...')
         rom.seek(game_cxi_offset)
-        ncch_header = list(rom.read(0x200))
-        ncch_header[0x160:0x180] = list(new_extheader_hash)
+        ncch_header_list = list(rom.read(0x200))
+        ncch_header_list[0x160:0x180] = list(new_extheader_hash)
         if args.ignore_encryption == True:
             print_v('\nEncryption is ignored, setting ncchflag[7] to NoCrypto')
-            ncch_header[0x18F] |= 0x4
-        ncch_header = bytes(ncch_header)
+            ncch_header_list[0x18F] |= 0x4
+        ncch_header = bytes(ncch_header_list)
 
         # get icon from ExeFS
         print_v('Getting SMDH...')
@@ -547,7 +540,7 @@ for rom_file in files:
             )
 
             # changing to list to update and hash later
-            chunk_records = list(chunk_records)
+            chunk_records_list = list(chunk_records)
 
             # write content count in tmd
             cia.seek(0x2F9F)
@@ -572,9 +565,9 @@ for rom_file in files:
             print('Writing Game Executable CXI...')
             rom.seek(game_cxi_offset + 0x200 + 0x400)
             left = game_cxi_size - 0x200 - 0x400
-            tmpread = ''
+            tmpread = b''
             for __ in itertools.repeat(
-                    0, int(math.floor((game_cxi_size / read_size)) + 1)):
+                    0, int(math.floor(game_cxi_size / read_size) + 1)):
                 to_read = min(read_size, left)
                 tmpread = rom.read(to_read)
                 game_cxi_hash.update(tmpread)
@@ -585,10 +578,10 @@ for rom_file in files:
                     print('')
                     break
             print_v('Game Executable CXI SHA-256 hash:')
-            print_v('  {}'.format(game_cxi_hash.hexdigest().upper()))
+            print_v(f'  {game_cxi_hash.hexdigest().upper()}')
             cia.seek(0x38D4)
             cia.write(game_cxi_hash.digest())
-            chunk_records[0x10:0x30] = list(game_cxi_hash.digest())
+            chunk_records_list[0x10:0x30] = list(game_cxi_hash.digest())
 
             cr_offset = 0
 
@@ -600,7 +593,7 @@ for rom_file in files:
                 rom.seek(manual_cfa_offset)
                 left = manual_cfa_size
                 for __ in itertools.repeat(
-                        0, int(math.floor((manual_cfa_size / read_size)) + 1)):
+                        0, int(math.floor(manual_cfa_size / read_size) + 1)):
                     to_read = min(read_size, left)
                     tmpread = rom.read(to_read)
                     manual_cfa_hash.update(tmpread)
@@ -611,10 +604,10 @@ for rom_file in files:
                         print('')
                         break
                 print_v('Manual CFA SHA-256 hash:')
-                print_v('  {}'.format(manual_cfa_hash.hexdigest().upper()))
+                print_v(f'  {manual_cfa_hash.hexdigest().upper()}')
                 cia.seek(0x3904)
                 cia.write(manual_cfa_hash.digest())
-                chunk_records[0x40:0x60] = list(manual_cfa_hash.digest())
+                chunk_records_list[0x40:0x60] = list(manual_cfa_hash.digest())
                 cr_offset += 0x30
 
             # Download Play child container CFA
@@ -626,8 +619,8 @@ for rom_file in files:
                 left = dlpchild_cfa_size
                 # i am so sorry
                 for __ in itertools.repeat(
-                        0, int(math.floor((dlpchild_cfa_size /
-                               read_size)) + 1)):
+                        0, int(math.floor(dlpchild_cfa_size /
+                               read_size) + 1)):
                     to_read = min(read_size, left)
                     tmpread = rom.read(to_read)
                     dlpchild_cfa_hash.update(tmpread)
@@ -638,18 +631,18 @@ for rom_file in files:
                         print('')
                         break
                 print_v('- Download Play child container CFA SHA-256 hash:')
-                print_v('  {}'.format(dlpchild_cfa_hash.hexdigest().upper()))
+                print_v(f'  {dlpchild_cfa_hash.hexdigest().upper()}')
                 cia.seek(0x3904 + cr_offset)
                 cia.write(dlpchild_cfa_hash.digest())
-                chunk_records[0x40 + cr_offset:0x60 + cr_offset] = list(
+                chunk_records_list[0x40 + cr_offset:0x60 + cr_offset] = list(
                     dlpchild_cfa_hash.digest()
                 )
 
             # update final hashes
             print_v('\nUpdating hashes...')
-            chunk_records_hash = hashlib.sha256(bytes(chunk_records))
+            chunk_records_hash = hashlib.sha256(bytes(chunk_records_list))
             print_v('Content chunk records SHA-256 hash:')
-            print_v('  {}'.format(chunk_records_hash.hexdigest().upper()))
+            print_v(f'  {chunk_records_hash.hexdigest().upper()}')
             cia.seek(0x2FC7)
             cia.write(bytes([content_count]) + chunk_records_hash.digest())
 
@@ -659,7 +652,7 @@ for rom_file in files:
                 chunk_records_hash.digest() + (bytes(0x8DC))
             )
             print_v('Content info records SHA-256 hash:')
-            print_v('  {}'.format(info_records_hash.hexdigest().upper()))
+            print_v(f'  {info_records_hash.hexdigest().upper()}')
             cia.write(info_records_hash.digest())
 
             # write Meta region
@@ -671,5 +664,4 @@ for rom_file in files:
 
     processed_files += 1
 
-print("Done converting {} out of {} files.".format(processed_files,
-                                                   total_files))
+print(f"Done converting {processed_files} out of {total_files} files.")

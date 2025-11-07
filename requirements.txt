@@ -1,0 +1,2 @@
+# Core dependencies for 3dsconv
+pyaes>=1.6.1

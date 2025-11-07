@@ -1,0 +1,30 @@
+{
+  "include": [
+    "dsconv"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    "venv",
+    "env",
+    ".venv",
+    "context_portal",
+    "build",
+    "dist"
+  ],
+  "ignore": [
+    "venv",
+    "context_portal"
+  ],
+  "pythonVersion": "3.10",
+  "pythonPlatform": "All",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "reportUnusedImport": "warning",
+  "reportUnusedClass": "warning",
+  "reportUnusedFunction": "warning",
+  "reportUnusedVariable": "warning",
+  "reportDuplicateImport": "warning"
+}

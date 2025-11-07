@@ -15,6 +15,21 @@ build/
 dist/
 *__pycache__*
 
+# Python virtual environments
+venv/
+env/
+.venv/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Context portal (AI agent context database)
+context_portal/
+
 # Created by .ignore support plugin (hsz.mobi)
 ### JetBrains template
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio
