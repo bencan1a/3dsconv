@@ -22,82 +22,69 @@ def main():
 
 
 def parse_args() -> argparse.Namespace:
-    '''Parses and returns the command-line arguments'''
+    """Parses and returns the command-line arguments"""
 
     parser = argparse.ArgumentParser(
-        prog='3dsconv.py',
-        description='Convert Nintendo 3DS CCI (.3ds/.cci) to CIA'
+        prog="3dsconv.py", description="Convert Nintendo 3DS CCI (.3ds/.cci) to CIA"
     )
 
     parser.add_argument(
-        '-o', '--output',
-        metavar='output-directory',
-        default='',
-        help='Save converted files in specified directory (default: current directory)'
+        "-o",
+        "--output",
+        metavar="output-directory",
+        default="",
+        help="Save converted files in specified directory (default: current directory)",
     )
 
     parser.add_argument(
-        '-b', '--boot9',
-        metavar='path-to-boot9',
-        default=os.environ.get('BOOT9_PATH'),
-        help='Path to dump of ARM9 bootROM, protected or full'
+        "-b",
+        "--boot9",
+        metavar="path-to-boot9",
+        default=os.environ.get("BOOT9_PATH"),
+        help="Path to dump of ARM9 bootROM, protected or full",
     )
 
     parser.add_argument(
-        '--overwrite',
-        action='store_true',
-        help='Overwrite existing converted files'
+        "--overwrite", action="store_true", help="Overwrite existing converted files"
     )
 
     parser.add_argument(
-        '--ignore-bad-hashes',
-        action='store_true',
-        help='Ignore invalid hashes and CCI files and convert anyway'
+        "--ignore-bad-hashes",
+        action="store_true",
+        help="Ignore invalid hashes and CCI files and convert anyway",
     )
 
     parser.add_argument(
-        '--ignore-encryption',
-        action='store_true',
-        help='Ignore the encryption header value, assume the ROM as unencrypted'
+        "--ignore-encryption",
+        action="store_true",
+        help="Ignore the encryption header value, assume the ROM as unencrypted",
     )
 
-    parser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        help='Print more information'
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Print more information")
 
-    parser.add_argument(
-        '--dev-keys',
-        action='store_true',
-        help='Use developer-unit keys'
-    )
+    parser.add_argument("--dev-keys", action="store_true", help="Use developer-unit keys")
 
     # deprecated arguments; we want to print out a message on this
     # in the future we can probably use an `action` to handle this.
     parser.add_argument(
-        '--gen-ncchinfo', '--gen-ncch-all', '--xorpads',
-        dest='use_deprecated',
-        action='store_true',
-        help=argparse.SUPPRESS
+        "--gen-ncchinfo",
+        "--gen-ncch-all",
+        "--xorpads",
+        dest="use_deprecated",
+        action="store_true",
+        help=argparse.SUPPRESS,
     )
 
     # arguments kept for backwards compatibility
     parser.add_argument(
-        '--no-convert', '--noconvert',
-        default=argparse.SUPPRESS,
-        help=argparse.SUPPRESS
+        "--no-convert", "--noconvert", default=argparse.SUPPRESS, help=argparse.SUPPRESS
     )
 
     # positional arguments
-    parser.add_argument(
-        'game',
-        nargs='+',
-        help='Game file to convert to CIA'
-    )
+    parser.add_argument("game", nargs="+", help="Game file to convert to CIA")
 
     # if no arguments are provided, display help message
-    if len(sys.argv)==1:
+    if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
         sys.exit(1)
 
@@ -108,11 +95,12 @@ def parse_args() -> argparse.Namespace:
 pyaes_found = False
 try:
     import pyaes  # type: ignore[import-untyped]
+
     pyaes_found = True
 except ImportError:
     pass  # this is handled later
 
-version = '4.21'
+version = "4.21"
 
 args = parse_args()
 
@@ -120,7 +108,7 @@ args = parse_args()
 # compressed using zlib then encoded with base64
 
 # retail CIA certificate chain
-certchain_retail = b'''
+certchain_retail = b"""
 eJytkvk/E44fx9GsT58ZsrlvaUmxMJ8RQiTXx50wRRbmWObKkTnTZ5FQxsxNJlfKyvGNCpnJbY7k
 +Nacc205P+X69H30+Qv0fb5/fr0er8f78eTi5jqCM9Riv24u8iXhx7jVsVIZzqaWhOJ7kuklQk6R
 8/xbJ6Lb+QXVJ7QnF8iZTxecR31JlPlpX759zbNPH/PGIw4S9Lt0jsTJFIDfjZXCYy+9rP1mKOld
@@ -155,13 +143,13 @@ BeBnqbRJIzu2dTgWjBkruUqXgMVNkmXLFlCVXDDrr544EXBycrj/bQGTvaD5Xxhi5XFMJQ90ABCb
 u21xj98PkLDRo1KpnMnT5MgZac7wXbkFmuGkwjB+/fnb4+pu8S9SfddW7FB78cme+qu3eg3ALqYH
 TBX75FcaKEN7hIqRZtVmWj/jdyZAN8ZlELqbKzD33aCU7gn8gPZpWjUuUcn3ceWArEfJ444p0Fw5
 pSLLvMAGmw9/oJDbIM+w9N1rQQ+sxPYUrkQZeIxeDrTXxYnm6T1LffRCdMaVqr5ObS1Wxbnu0wKw
-JWFnDuv/P7kyh1k='''
+JWFnDuv/P7kyh1k="""
 
 # ticket (blank titlekey and title ID), tmd signature with blank header
 #   (blank title ID) and blank content info records
-ticket_tmd = b'''
+ticket_tmd = b"""
 eJxjYGRgYRgFZIOg/PwSXWdHAwgw1o0IhjKTaW83I+2toJMlBAAjgwiQXAPEIlA2CGgwQFzXAsbM
-EMH/BMBAOB8vGM1/FAH0/OccAGUmEacfR/J2AAAmBS75'''
+EMH/BMBAOB8vGM1/FAH0/OccAGUmEacfR/J2AAAmBS75"""
 
 mu = 0x200  # media unit
 read_size = 0x800000  # used from padxorer
@@ -171,12 +159,13 @@ zerokey = bytes(0x10)
 # used from http://www.falatic.com/index.php/108/python-and-bitwise-rotation
 # converted to def because pycodestyle complained to me
 def rol(val, r_bits, max_bits):
-    return (val << r_bits % max_bits) & (2 ** max_bits - 1) | \
-        ((val & (2 ** max_bits - 1)) >> (max_bits - (r_bits % max_bits)))
+    return (val << r_bits % max_bits) & (2**max_bits - 1) | (
+        (val & (2**max_bits - 1)) >> (max_bits - (r_bits % max_bits))
+    )
 
 
 # verbose messages
-def print_v(*msg, end='\n'):
+def print_v(*msg, end="\n"):
     if args.verbose:
         print(*msg, end=end)
 
@@ -185,48 +174,49 @@ def print_v(*msg, end='\n'):
 def v(msg):
     if args.verbose:
         return msg
-    return ''
+    return ""
 
 
 # error messages
 def error(*msg):
-    print('Error:', *msg)
+    print("Error:", *msg)
 
 
 # show a progress bar
 def show_progress(val, maxval):
     # print() didn't do what I wanted so I'm doing this
     minval = min(val, maxval)
-    sys.stdout.write(f'\r  {(minval / maxval) * 100:>5.1f}% {minval:>10} / {maxval}'
-    )
+    sys.stdout.write(f"\r  {(minval / maxval) * 100:>5.1f}% {minval:>10} / {maxval}")
     sys.stdout.flush()
 
 
 total_files = 0
 processed_files = 0
 
-certchain_dev = b''
+certchain_dev = b""
 if args.dev_keys:
-    print('Devkit keys are being used since `--dev-keys\' was passed. Note '
-          'the resulting files will still be encrypted with devkit keys, and '
-          'only installable on developer units without extra conversion.')
-    print('Looking for certchain-dev.bin...')
+    print(
+        "Devkit keys are being used since `--dev-keys' was passed. Note "
+        "the resulting files will still be encrypted with devkit keys, and "
+        "only installable on developer units without extra conversion."
+    )
+    print("Looking for certchain-dev.bin...")
 
     def check_path(path):
         global certchain_dev
         if not certchain_dev:
             if os.path.isfile(path):
-                with open(path, 'rb') as c:
+                with open(path, "rb") as c:
                     certchain = c.read(0xA00)
-                    correct_hash = 'd5c3d811a7eb87340aa9f4ab1841b6c4'
+                    correct_hash = "d5c3d811a7eb87340aa9f4ab1841b6c4"
                     if hashlib.md5(certchain).hexdigest() == correct_hash:
                         certchain_dev = certchain
 
-    check_path('certchain-dev.bin')
-    check_path(os.path.expanduser('~') + '/.3ds/certchain-dev.bin')
+    check_path("certchain-dev.bin")
+    check_path(os.path.expanduser("~") + "/.3ds/certchain-dev.bin")
 
     if not certchain_dev:
-        error('Invalid or missing dev certchain. See README for details.')
+        error("Invalid or missing dev certchain. See README for details.")
         sys.exit(1)
 
 files = []
@@ -238,25 +228,26 @@ for arg in args.game:
     else:
         for input_file in to_add:
             rom_name = os.path.basename(os.path.splitext(input_file)[0])
-            cia_name = os.path.join(args.output, rom_name + '.cia')
+            cia_name = os.path.join(args.output, rom_name + ".cia")
             if not args.overwrite and os.path.isfile(cia_name):
-                error(f'"{cia_name}" already exists. Use `--overwrite\' to force'
-                        'conversion.')
+                error(f'"{cia_name}" already exists. Use `--overwrite\' to forceconversion.')
                 continue
             total_files += 1
             files.append([input_file, rom_name, cia_name])
 
 if args.use_deprecated:
-    print('Note: Deprecated options are being used. XORpads are no longer '
-          'supported. See the README at https://github.com/ihaveamac/3dsconv '
-          'for more details.')
+    print(
+        "Note: Deprecated options are being used. XORpads are no longer "
+        "supported. See the README at https://github.com/ihaveamac/3dsconv "
+        "for more details."
+    )
 
 # print if pyaes is found, and search for boot9 if it is
 # then get the original NCCH key from it
 keys_set = False
 orig_ncch_key = 0
 if pyaes_found:
-    print_v('pyaes found, Searching for protected ARM9 bootROM')
+    print_v("pyaes found, Searching for protected ARM9 bootROM")
 
     def set_keys(boot9_file):
         keys_offset = 0
@@ -264,161 +255,169 @@ if pyaes_found:
             keys_offset += 0x8000
         if args.dev_keys:
             keys_offset += 0x400
-        with open(boot9_file, 'rb') as f:
+        with open(boot9_file, "rb") as f:
             global keys_set, orig_ncch_key
             # get Original NCCH (slot 0x2C key X)
             f.seek(0x59D0 + keys_offset)
             key = f.read(0x10)
             key_hash = hashlib.md5(key).hexdigest()
-            correct_hash = ('49aa32c775608af6298ddc0fc6d18a7e' if args.dev_keys else
-                            'e35bf88330f4f1b2bb6fd5b870a679ca')
+            correct_hash = (
+                "49aa32c775608af6298ddc0fc6d18a7e"
+                if args.dev_keys
+                else "e35bf88330f4f1b2bb6fd5b870a679ca"
+            )
             if key_hash == correct_hash:
-                print_v('Correct key found.')
-                orig_ncch_key = int.from_bytes(key, byteorder='big')
+                print_v("Correct key found.")
+                orig_ncch_key = int.from_bytes(key, byteorder="big")
                 keys_set = True
                 return
-            print_v('Corrupt file (invalid key).')
+            print_v("Corrupt file (invalid key).")
 
     def check_path(path):
         if not keys_set:
-            print_v(f'... {path}: ', end='')
+            print_v(f"... {path}: ", end="")
             if os.path.isfile(path):
                 set_keys(path)
             else:
-                print_v('File doesn\'t exist.')
+                print_v("File doesn't exist.")
 
     # check supplied path by boot9_path or --boot9
     if args.boot9:
         check_path(args.boot9)
-    check_path('boot9.bin')
-    check_path('boot9_prot.bin')
-    check_path(os.path.expanduser('~') + '/.3ds/boot9.bin')
-    check_path(os.path.expanduser('~') + '/.3ds/boot9_prot.bin')
+    check_path("boot9.bin")
+    check_path("boot9_prot.bin")
+    check_path(os.path.expanduser("~") + "/.3ds/boot9.bin")
+    check_path(os.path.expanduser("~") + "/.3ds/boot9_prot.bin")
     if not keys_set:
-        error('bootROM not found, encryption will not be supported')
+        error("bootROM not found, encryption will not be supported")
 else:
-    error('pyaes not found, encryption will not be supported')
+    error("pyaes not found, encryption will not be supported")
 
 # create output directory if it doesn't exist
-if args.output != '':
+if args.output != "":
     os.makedirs(args.output, exist_ok=True)
 
 if not total_files:
-    error('No files were given.')
+    error("No files were given.")
     sys.exit(1)
 if not files:
-    error('No inputted files exist.')
+    error("No inputted files exist.")
     sys.exit(1)
 
 for rom_file in files:
-    with open(rom_file[0], 'rb') as rom:
-        print_v(f'----------\nProcessing {rom_file[0]}...')
+    with open(rom_file[0], "rb") as rom:
+        print_v(f"----------\nProcessing {rom_file[0]}...")
         # check for NCSD magic
         # 3DS NAND dumps also have this
         rom.seek(0x100)
         ncsd_magic = rom.read(4)
-        if ncsd_magic != b'NCSD':
+        if ncsd_magic != b"NCSD":
             error(f'"{rom_file[0]}" is not a CCI file (missing NCSD magic).')
             continue
 
         # get title ID
         rom.seek(0x108)
         title_id = rom.read(8)[::-1]
-        title_id_hex = binascii.hexlify(title_id).decode('utf-8').upper()
-        print_v('\nTitle ID:', format(title_id_hex))
+        title_id_hex = binascii.hexlify(title_id).decode("utf-8").upper()
+        print_v("\nTitle ID:", format(title_id_hex))
 
         # get partition sizes
         rom.seek(0x120)
 
         # find Game Executable CXI
-        game_cxi_offset = struct.unpack('<I', rom.read(4))[0] * mu
-        game_cxi_size = struct.unpack('<I', rom.read(4))[0] * mu
-        print_v(f'\nGame Executable CXI Size: {game_cxi_size:X}')
+        game_cxi_offset = struct.unpack("<I", rom.read(4))[0] * mu
+        game_cxi_size = struct.unpack("<I", rom.read(4))[0] * mu
+        print_v(f"\nGame Executable CXI Size: {game_cxi_size:X}")
 
         # find Manual CFA
-        manual_cfa_offset = struct.unpack('<I', rom.read(4))[0] * mu
-        manual_cfa_size = struct.unpack('<I', rom.read(4))[0] * mu
-        print_v(f'Manual CFA Size: {manual_cfa_size:X}')
+        manual_cfa_offset = struct.unpack("<I", rom.read(4))[0] * mu
+        manual_cfa_size = struct.unpack("<I", rom.read(4))[0] * mu
+        print_v(f"Manual CFA Size: {manual_cfa_size:X}")
 
         # find Download Play child CFA
-        dlpchild_cfa_offset = struct.unpack('<I', rom.read(4))[0] * mu
-        dlpchild_cfa_size = struct.unpack('<I', rom.read(4))[0] * mu
-        print_v(f'Download Play child CFA Size: {dlpchild_cfa_size:X}\n')
+        dlpchild_cfa_offset = struct.unpack("<I", rom.read(4))[0] * mu
+        dlpchild_cfa_size = struct.unpack("<I", rom.read(4))[0] * mu
+        print_v(f"Download Play child CFA Size: {dlpchild_cfa_size:X}\n")
 
         # check for NCCH magic
         # prevents NAND dumps from being "converted"
         rom.seek(game_cxi_offset + 0x100)
         ncch_magic = rom.read(4)
-        if ncch_magic != b'NCCH':
+        if ncch_magic != b"NCCH":
             error(f'"{rom_file[0]}" is not a CCI file (missing NCCH magic).')
             continue
 
         # get the encryption type
         rom.seek(game_cxi_offset + 0x18F)
         # pay no mind to this ugliness...
-        encryption_bitmask = struct.pack('c', rom.read(1))[0]
-        encrypted = not (encryption_bitmask & 0x4 or args.ignore_encryption == True)
+        encryption_bitmask = struct.pack("c", rom.read(1))[0]
+        encrypted = not (encryption_bitmask & 0x4 or args.ignore_encryption)
         zerokey_encrypted = encryption_bitmask & 0x1
 
         if encrypted:
             if not keys_set:
-                error(f'"{rom_file[0]}" is encrypted using Original NCCH and pyaes or '
-                      'the bootROM were not found, therefore this can not be '
-                      'converted. See the README at '
-                      'https://github.com/ihaveamac/3dsconv for details.'
-                      )
+                error(
+                    f'"{rom_file[0]}" is encrypted using Original NCCH and pyaes or '
+                    "the bootROM were not found, therefore this can not be "
+                    "converted. See the README at "
+                    "https://github.com/ihaveamac/3dsconv for details."
+                )
                 continue
             else:
                 # get normal key to decrypt parts of the file
-                key = b''
-                ctr_extheader_v = int(title_id_hex + '0100000000000000', 16)
-                ctr_exefs_v = int(title_id_hex + '0200000000000000', 16)
+                key = b""
+                ctr_extheader_v = int(title_id_hex + "0100000000000000", 16)
+                ctr_exefs_v = int(title_id_hex + "0200000000000000", 16)
                 if zerokey_encrypted:
                     key = zerokey
                 else:
                     rom.seek(game_cxi_offset)
                     key_y_bytes = rom.read(0x10)
-                    key_y = int.from_bytes(key_y_bytes, byteorder='big')
-                    key = rol((rol(orig_ncch_key, 2, 128) ^ key_y) +
-                              0x1FF9E9AAC5FE0408024591DC5D52768A, 87,
-                              128).to_bytes(0x10, byteorder='big')
-                    print_v('Normal key:',
-                            binascii.hexlify(key).decode('utf-8').upper())
+                    key_y = int.from_bytes(key_y_bytes, byteorder="big")
+                    key = rol(
+                        (rol(orig_ncch_key, 2, 128) ^ key_y) + 0x1FF9E9AAC5FE0408024591DC5D52768A,
+                        87,
+                        128,
+                    ).to_bytes(0x10, byteorder="big")
+                    print_v("Normal key:", binascii.hexlify(key).decode("utf-8").upper())
 
-        print('Converting {} ({})...'.format(
-            rom_file[1], 'ignore encryption' if args.ignore_encryption else (
-                'zerokey encrypted' if zerokey_encrypted else (
-                    'encrypted' if encrypted else 'decrypted'
-                )
+        print(
+            "Converting {} ({})...".format(
+                rom_file[1],
+                "ignore encryption"
+                if args.ignore_encryption
+                else (
+                    "zerokey encrypted"
+                    if zerokey_encrypted
+                    else ("encrypted" if encrypted else "decrypted")
+                ),
             )
-        ))
+        )
 
         # Game Executable fist-half ExtHeader
-        print_v('\nVerifying ExtHeader...')
+        print_v("\nVerifying ExtHeader...")
         rom.seek(game_cxi_offset + 0x200)
         extheader = rom.read(0x400)
         if encrypted:
-            print_v('Decrypting ExtHeader...')
+            print_v("Decrypting ExtHeader...")
             ctr_extheader = pyaes.Counter(initial_value=ctr_extheader_v)
-            cipher_extheader = pyaes.AESModeOfOperationCTR(
-                key, counter=ctr_extheader)
+            cipher_extheader = pyaes.AESModeOfOperationCTR(key, counter=ctr_extheader)
             extheader = cipher_extheader.decrypt(extheader)
         extheader_hash = hashlib.sha256(extheader).digest()
         rom.seek(0x4160)
         ncch_extheader_hash = rom.read(0x20)
         if extheader_hash != ncch_extheader_hash:
             print(
-                'This file may be corrupt (invalid ExtHeader hash). '
-                'If you are certain that the rom is decrypted, use --ignore-encryption'
+                "This file may be corrupt (invalid ExtHeader hash). "
+                "If you are certain that the rom is decrypted, use --ignore-encryption"
             )
             if args.ignore_bad_hashes:
-                print('Converting anyway because --ignore-bad-hashes was '
-                      'passed.')
+                print("Converting anyway because --ignore-bad-hashes was passed.")
             else:
                 continue
 
         # patch ExtHeader to make an SD title
-        print_v('Patching ExtHeader...')
+        print_v("Patching ExtHeader...")
         extheader_list = list(extheader)
         extheader_list[0xD] |= 2
         extheader = bytes(extheader_list)
@@ -431,54 +430,51 @@ for rom_file in files:
         save_size = extheader[0x1C0:0x1C4]
 
         if encrypted:
-            print_v('Re-encrypting ExtHeader...')
+            print_v("Re-encrypting ExtHeader...")
             ctr_extheader = pyaes.Counter(initial_value=ctr_extheader_v)
-            cipher_extheader = pyaes.AESModeOfOperationCTR(
-                key, counter=ctr_extheader)
+            cipher_extheader = pyaes.AESModeOfOperationCTR(key, counter=ctr_extheader)
             extheader = cipher_extheader.encrypt(extheader)
 
         # Game Executable NCCH Header
-        print_v('\nReading NCCH Header of Game Executable...')
+        print_v("\nReading NCCH Header of Game Executable...")
         rom.seek(game_cxi_offset)
         ncch_header_list = list(rom.read(0x200))
         ncch_header_list[0x160:0x180] = list(new_extheader_hash)
-        if args.ignore_encryption == True:
-            print_v('\nEncryption is ignored, setting ncchflag[7] to NoCrypto')
+        if args.ignore_encryption:
+            print_v("\nEncryption is ignored, setting ncchflag[7] to NoCrypto")
             ncch_header_list[0x18F] |= 0x4
         ncch_header = bytes(ncch_header_list)
 
         # get icon from ExeFS
-        print_v('Getting SMDH...')
-        exefs_offset = struct.unpack('<I', ncch_header[0x1A0:0x1A4])[0] * mu
+        print_v("Getting SMDH...")
+        exefs_offset = struct.unpack("<I", ncch_header[0x1A0:0x1A4])[0] * mu
         rom.seek(game_cxi_offset + exefs_offset)
         # exefs can contain up to 10 file headers but only 4 are used normally
         exefs_file_header = rom.read(0x40)
         if encrypted:
-            print_v('Decrypting ExeFS Header...')
+            print_v("Decrypting ExeFS Header...")
             ctr_exefs = pyaes.Counter(initial_value=ctr_exefs_v)
-            cipher_exefs = pyaes.AESModeOfOperationCTR(
-                key, counter=ctr_exefs)
+            cipher_exefs = pyaes.AESModeOfOperationCTR(key, counter=ctr_exefs)
             exefs_file_header = cipher_exefs.encrypt(exefs_file_header)
         exefs_icon = None
         for header_num in range(0, 4):
-            if exefs_file_header[header_num * 0x10:0x8 + (header_num * 0x10)]\
-                    .rstrip(b'\0') == b'icon':  # wtf indentation
+            if (
+                exefs_file_header[header_num * 0x10 : 0x8 + (header_num * 0x10)].rstrip(b"\0")
+                == b"icon"
+            ):  # wtf indentation
                 exefs_icon_offset = struct.unpack(
-                    '<I', exefs_file_header[0x8 + (header_num * 0x10):
-                                            0xC + (header_num * 0x10)])[0]
+                    "<I", exefs_file_header[0x8 + (header_num * 0x10) : 0xC + (header_num * 0x10)]
+                )[0]
                 rom.seek(exefs_icon_offset + 0x200 - 0x40, 1)
                 exefs_icon = rom.read(0x36C0)
                 if encrypted:
-                    ctr_exefs_icon_v = ctr_exefs_v +\
-                        (exefs_icon_offset // 0x10) + 0x20
-                    ctr_exefs_icon = pyaes.Counter(
-                        initial_value=ctr_exefs_icon_v)
-                    cipher_exefs_icon = pyaes.AESModeOfOperationCTR(
-                        key, counter=ctr_exefs_icon)
+                    ctr_exefs_icon_v = ctr_exefs_v + (exefs_icon_offset // 0x10) + 0x20
+                    ctr_exefs_icon = pyaes.Counter(initial_value=ctr_exefs_icon_v)
+                    cipher_exefs_icon = pyaes.AESModeOfOperationCTR(key, counter=ctr_exefs_icon)
                     exefs_icon = cipher_exefs_icon.decrypt(exefs_icon)
                 break
         if exefs_icon is None:
-            error('Icon not found in the ExeFS.')
+            error("Icon not found in the ExeFS.")
             continue
 
         # since we will only have three possible results to these, these are
@@ -501,42 +497,52 @@ for rom_file in files:
             content_index += 0b00100000
 
         # CIA
-        with open(rom_file[2], 'wb') as cia:
-            print_v('Writing CIA header...')
+        with open(rom_file[2], "wb") as cia:
+            print_v("Writing CIA header...")
 
             # 1st content: ID 0x, Index 0x0
-            chunk_records = struct.pack('>III', 0, 0, 0)
+            chunk_records = struct.pack(">III", 0, 0, 0)
             chunk_records += struct.pack(">I", game_cxi_size)
             chunk_records += bytes(0x20)  # SHA-256 to be added later
             if manual_cfa_offset != 0:
                 # 2nd content: ID 0x1, Index 0x1
-                chunk_records += struct.pack('>III', 1, 0x10000, 0)
-                chunk_records += struct.pack('>I', manual_cfa_size)
+                chunk_records += struct.pack(">III", 1, 0x10000, 0)
+                chunk_records += struct.pack(">I", manual_cfa_size)
                 chunk_records += bytes(0x20)  # SHA-256 to be added later
             if dlpchild_cfa_offset != 0:
                 # 3nd content: ID 0x2, Index 0x2
-                chunk_records += struct.pack('>III', 2, 0x20000, 0)
-                chunk_records += struct.pack('>I', dlpchild_cfa_size)
+                chunk_records += struct.pack(">III", 2, 0x20000, 0)
+                chunk_records += struct.pack(">I", dlpchild_cfa_size)
                 chunk_records += bytes(0x20)  # SHA-256 to be added later
 
             content_size = game_cxi_size + manual_cfa_size + dlpchild_cfa_size
 
             cia.write(
                 # initial CIA header
-                struct.pack('<IHHII', 0x2020, 0, 0, 0xA00, 0x350) +
+                struct.pack("<IHHII", 0x2020, 0, 0, 0xA00, 0x350)
+                +
                 # tmd size, meta size, content size
                 # this is ugly as well
-                struct.pack('<III', tmd_size, 0x3AC0, content_size) +
+                struct.pack("<III", tmd_size, 0x3AC0, content_size)
+                +
                 # content index
-                struct.pack('<IB', 0, content_index) + (bytes(0x201F)) +
+                struct.pack("<IB", 0, content_index)
+                + (bytes(0x201F))
+                +
                 # cert chain
-                (certchain_dev if args.dev_keys else
-                 zlib.decompress(base64.b64decode(certchain_retail))) +
+                (
+                    certchain_dev
+                    if args.dev_keys
+                    else zlib.decompress(base64.b64decode(certchain_retail))
+                )
+                +
                 # ticket, tmd
-                zlib.decompress(base64.b64decode(ticket_tmd)) +
-                (bytes(0x96C)) +
+                zlib.decompress(base64.b64decode(ticket_tmd))
+                + (bytes(0x96C))
+                +
                 # chunk records in tmd + padding
-                chunk_records + tmd_padding
+                chunk_records
+                + tmd_padding
             )
 
             # changing to list to update and hash later
@@ -562,12 +568,11 @@ for rom_file in files:
             cia.write(ncch_header + extheader)
 
             # Game Executable CXI second-half ExHeader + contents
-            print('Writing Game Executable CXI...')
+            print("Writing Game Executable CXI...")
             rom.seek(game_cxi_offset + 0x200 + 0x400)
             left = game_cxi_size - 0x200 - 0x400
-            tmpread = b''
-            for __ in itertools.repeat(
-                    0, int(math.floor(game_cxi_size / read_size) + 1)):
+            tmpread = b""
+            for __ in itertools.repeat(0, int(math.floor(game_cxi_size / read_size) + 1)):
                 to_read = min(read_size, left)
                 tmpread = rom.read(to_read)
                 game_cxi_hash.update(tmpread)
@@ -575,10 +580,10 @@ for rom_file in files:
                 left -= read_size
                 show_progress(game_cxi_size - left, game_cxi_size)
                 if left <= 0:
-                    print('')
+                    print("")
                     break
-            print_v('Game Executable CXI SHA-256 hash:')
-            print_v(f'  {game_cxi_hash.hexdigest().upper()}')
+            print_v("Game Executable CXI SHA-256 hash:")
+            print_v(f"  {game_cxi_hash.hexdigest().upper()}")
             cia.seek(0x38D4)
             cia.write(game_cxi_hash.digest())
             chunk_records_list[0x10:0x30] = list(game_cxi_hash.digest())
@@ -588,12 +593,11 @@ for rom_file in files:
             # Manual CFA
             if manual_cfa_offset != 0:
                 cia.seek(0, 2)
-                print('Writing Manual CFA...')
+                print("Writing Manual CFA...")
                 manual_cfa_hash = hashlib.sha256()
                 rom.seek(manual_cfa_offset)
                 left = manual_cfa_size
-                for __ in itertools.repeat(
-                        0, int(math.floor(manual_cfa_size / read_size) + 1)):
+                for __ in itertools.repeat(0, int(math.floor(manual_cfa_size / read_size) + 1)):
                     to_read = min(read_size, left)
                     tmpread = rom.read(to_read)
                     manual_cfa_hash.update(tmpread)
@@ -601,10 +605,10 @@ for rom_file in files:
                     left -= read_size
                     show_progress(manual_cfa_size - left, manual_cfa_size)
                     if left <= 0:
-                        print('')
+                        print("")
                         break
-                print_v('Manual CFA SHA-256 hash:')
-                print_v(f'  {manual_cfa_hash.hexdigest().upper()}')
+                print_v("Manual CFA SHA-256 hash:")
+                print_v(f"  {manual_cfa_hash.hexdigest().upper()}")
                 cia.seek(0x3904)
                 cia.write(manual_cfa_hash.digest())
                 chunk_records_list[0x40:0x60] = list(manual_cfa_hash.digest())
@@ -613,14 +617,12 @@ for rom_file in files:
             # Download Play child container CFA
             if dlpchild_cfa_offset != 0:
                 cia.seek(0, 2)
-                print('Writing Download Play child container CFA...')
+                print("Writing Download Play child container CFA...")
                 dlpchild_cfa_hash = hashlib.sha256()
                 rom.seek(dlpchild_cfa_offset)
                 left = dlpchild_cfa_size
                 # i am so sorry
-                for __ in itertools.repeat(
-                        0, int(math.floor(dlpchild_cfa_size /
-                               read_size) + 1)):
+                for __ in itertools.repeat(0, int(math.floor(dlpchild_cfa_size / read_size) + 1)):
                     to_read = min(read_size, left)
                     tmpread = rom.read(to_read)
                     dlpchild_cfa_hash.update(tmpread)
@@ -628,38 +630,36 @@ for rom_file in files:
                     left -= read_size
                     show_progress(dlpchild_cfa_size - left, dlpchild_cfa_size)
                     if left <= 0:
-                        print('')
+                        print("")
                         break
-                print_v('- Download Play child container CFA SHA-256 hash:')
-                print_v(f'  {dlpchild_cfa_hash.hexdigest().upper()}')
+                print_v("- Download Play child container CFA SHA-256 hash:")
+                print_v(f"  {dlpchild_cfa_hash.hexdigest().upper()}")
                 cia.seek(0x3904 + cr_offset)
                 cia.write(dlpchild_cfa_hash.digest())
-                chunk_records_list[0x40 + cr_offset:0x60 + cr_offset] = list(
+                chunk_records_list[0x40 + cr_offset : 0x60 + cr_offset] = list(
                     dlpchild_cfa_hash.digest()
                 )
 
             # update final hashes
-            print_v('\nUpdating hashes...')
+            print_v("\nUpdating hashes...")
             chunk_records_hash = hashlib.sha256(bytes(chunk_records_list))
-            print_v('Content chunk records SHA-256 hash:')
-            print_v(f'  {chunk_records_hash.hexdigest().upper()}')
+            print_v("Content chunk records SHA-256 hash:")
+            print_v(f"  {chunk_records_hash.hexdigest().upper()}")
             cia.seek(0x2FC7)
             cia.write(bytes([content_count]) + chunk_records_hash.digest())
 
             cia.seek(0x2FA4)
             info_records_hash = hashlib.sha256(
-                bytes(3) + bytes([content_count]) +
-                chunk_records_hash.digest() + (bytes(0x8DC))
+                bytes(3) + bytes([content_count]) + chunk_records_hash.digest() + (bytes(0x8DC))
             )
-            print_v('Content info records SHA-256 hash:')
-            print_v(f'  {info_records_hash.hexdigest().upper()}')
+            print_v("Content info records SHA-256 hash:")
+            print_v(f"  {info_records_hash.hexdigest().upper()}")
             cia.write(info_records_hash.digest())
 
             # write Meta region
             cia.seek(0, 2)
             cia.write(
-                dependency_list + bytes(0x180) + struct.pack('<I', 0x2) +
-                bytes(0xFC) + exefs_icon
+                dependency_list + bytes(0x180) + struct.pack("<I", 0x2) + bytes(0xFC) + exefs_icon
             )
 
     processed_files += 1
