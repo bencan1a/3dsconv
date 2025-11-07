@@ -83,15 +83,15 @@ def parse_args() -> argparse.Namespace:
 def rol(val, r_bits, max_bits):
     """
     Rotate left operation.
-    
+
     Used from http://www.falatic.com/index.php/108/python-and-bitwise-rotation
     Converted to def because pycodestyle complained.
-    
+
     Args:
         val: Value to rotate
         r_bits: Number of bits to rotate
         max_bits: Maximum number of bits (bit width)
-        
+
     Returns:
         Rotated value
     """
@@ -103,7 +103,7 @@ def rol(val, r_bits, max_bits):
 def error(*msg):
     """
     Print error message with 'Error:' prefix.
-    
+
     Args:
         *msg: Message parts to print
     """
@@ -113,7 +113,7 @@ def error(*msg):
 def show_progress(val, maxval):
     """
     Show a progress bar.
-    
+
     Args:
         val: Current progress value
         maxval: Maximum value (100% completion)
