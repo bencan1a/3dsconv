@@ -240,3 +240,76 @@ class TestParseArgs:
 
         # Assert
         assert getattr(args, attr) == expected
+
+    def test_parse_args_prod_keys_short_flag(self, monkeypatch):
+        """Test parsing with -p flag for prod.keys."""
+        # Arrange
+        test_args = ["3dsconv.py", "-p", "/path/to/prod.keys", "game.cci"]
+        monkeypatch.setattr(sys, "argv", test_args)
+
+        # Act
+        args = parse_args()
+
+        # Assert
+        assert args.prod_keys == "/path/to/prod.keys"
+        assert args.game == ["game.cci"]
+
+    def test_parse_args_prod_keys_long_flag(self, monkeypatch):
+        """Test parsing with --prod-keys flag."""
+        # Arrange
+        test_args = ["3dsconv.py", "--prod-keys", "/path/to/prod.keys", "game.cci"]
+        monkeypatch.setattr(sys, "argv", test_args)
+
+        # Act
+        args = parse_args()
+
+        # Assert
+        assert args.prod_keys == "/path/to/prod.keys"
+        assert args.game == ["game.cci"]
+
+    def test_parse_args_prod_keys_env_var(self, monkeypatch):
+        """Test that PROD_KEYS_PATH environment variable is used as default."""
+        # Arrange
+        test_args = ["3dsconv.py", "game.cci"]
+        monkeypatch.setattr(sys, "argv", test_args)
+
+        # Act
+        with patch.dict(os.environ, {"PROD_KEYS_PATH": "/env/path/to/prod.keys"}):
+            args = parse_args()
+
+        # Assert
+        assert args.prod_keys == "/env/path/to/prod.keys"
+
+    def test_parse_args_prod_keys_flag_overrides_env(self, monkeypatch):
+        """Test that --prod-keys flag overrides PROD_KEYS_PATH environment variable."""
+        # Arrange
+        test_args = ["3dsconv.py", "-p", "/flag/path/prod.keys", "game.cci"]
+        monkeypatch.setattr(sys, "argv", test_args)
+
+        # Act
+        with patch.dict(os.environ, {"PROD_KEYS_PATH": "/env/path/to/prod.keys"}):
+            args = parse_args()
+
+        # Assert
+        assert args.prod_keys == "/flag/path/prod.keys"
+
+    def test_parse_args_both_boot9_and_prod_keys(self, monkeypatch):
+        """Test that both --boot9 and --prod-keys can be specified."""
+        # Arrange
+        test_args = [
+            "3dsconv.py",
+            "-b",
+            "/path/to/boot9.bin",
+            "-p",
+            "/path/to/prod.keys",
+            "game.cci",
+        ]
+        monkeypatch.setattr(sys, "argv", test_args)
+
+        # Act
+        args = parse_args()
+
+        # Assert
+        assert args.boot9 == "/path/to/boot9.bin"
+        assert args.prod_keys == "/path/to/prod.keys"
+        assert args.game == ["game.cci"]

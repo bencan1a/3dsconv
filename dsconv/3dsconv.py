@@ -45,6 +45,14 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "-p",
+        "--prod-keys",
+        metavar="path-to-prod-keys",
+        default=os.environ.get("PROD_KEYS_PATH"),
+        help="Path to prod.keys file containing encryption keys",
+    )
+
+    parser.add_argument(
         "--overwrite", action="store_true", help="Overwrite existing converted files"
     )
 
@@ -242,54 +250,95 @@ if args.use_deprecated:
         "for more details."
     )
 
-# print if pyaes is found, and search for boot9 if it is
+# print if pyaes is found, and search for prod.keys or boot9 if it is
 # then get the original NCCH key from it
 keys_set = False
 orig_ncch_key = 0
 if pyaes_found:
-    print_v("pyaes found, Searching for protected ARM9 bootROM")
+    # First, try to load keys from prod.keys file if provided
+    def set_keys_from_prod_keys(prod_keys_file):
+        try:
+            from dsconv.utils import get_slot0x2c_key_from_prod_keys
 
-    def set_keys(boot9_file):
-        keys_offset = 0
-        if os.path.getsize(boot9_file) == 0x10000:
-            keys_offset += 0x8000
-        if args.dev_keys:
-            keys_offset += 0x400
-        with open(boot9_file, "rb") as f:
             global keys_set, orig_ncch_key
-            # get Original NCCH (slot 0x2C key X)
-            f.seek(0x59D0 + keys_offset)
-            key = f.read(0x10)
-            key_hash = hashlib.md5(key).hexdigest()
-            correct_hash = (
-                "49aa32c775608af6298ddc0fc6d18a7e"
-                if args.dev_keys
-                else "e35bf88330f4f1b2bb6fd5b870a679ca"
-            )
-            if key_hash == correct_hash:
-                print_v("Correct key found.")
-                orig_ncch_key = int.from_bytes(key, byteorder="big")
-                keys_set = True
-                return
-            print_v("Corrupt file (invalid key).")
+            print_v(f"Attempting to load keys from {prod_keys_file}...")
+            orig_ncch_key = get_slot0x2c_key_from_prod_keys(prod_keys_file, args.dev_keys)
+            print_v("Successfully loaded slot0x2CKey from prod.keys")
+            keys_set = True
+            return True
+        except FileNotFoundError:
+            print_v(f"prod.keys file not found: {prod_keys_file}")
+            return False
+        except KeyError:
+            print_v("slot0x2CKey not found in prod.keys file")
+            return False
+        except ValueError as e:
+            print_v(f"Error parsing prod.keys file: {e}")
+            return False
 
-    def check_path(path):
-        if not keys_set:
+    def check_prod_keys_path(path):
+        if not keys_set and path:
             print_v(f"... {path}: ", end="")
             if os.path.isfile(path):
-                set_keys(path)
+                return set_keys_from_prod_keys(path)
             else:
                 print_v("File doesn't exist.")
+        return False
 
-    # check supplied path by boot9_path or --boot9
-    if args.boot9:
-        check_path(args.boot9)
-    check_path("boot9.bin")
-    check_path("boot9_prot.bin")
-    check_path(os.path.expanduser("~") + "/.3ds/boot9.bin")
-    check_path(os.path.expanduser("~") + "/.3ds/boot9_prot.bin")
+    # Check for prod.keys in the following order:
+    if args.prod_keys:
+        check_prod_keys_path(args.prod_keys)
     if not keys_set:
-        error("bootROM not found, encryption will not be supported")
+        check_prod_keys_path("prod.keys")
+    if not keys_set:
+        check_prod_keys_path(os.path.expanduser("~") + "/.3ds/prod.keys")
+
+    # If prod.keys not found, fall back to boot9
+    if not keys_set:
+        print_v("prod.keys not found, searching for protected ARM9 bootROM")
+
+        def set_keys(boot9_file):
+            keys_offset = 0
+            if os.path.getsize(boot9_file) == 0x10000:
+                keys_offset += 0x8000
+            if args.dev_keys:
+                keys_offset += 0x400
+            with open(boot9_file, "rb") as f:
+                global keys_set, orig_ncch_key
+                # get Original NCCH (slot 0x2C key X)
+                f.seek(0x59D0 + keys_offset)
+                key = f.read(0x10)
+                key_hash = hashlib.md5(key).hexdigest()
+                correct_hash = (
+                    "49aa32c775608af6298ddc0fc6d18a7e"
+                    if args.dev_keys
+                    else "e35bf88330f4f1b2bb6fd5b870a679ca"
+                )
+                if key_hash == correct_hash:
+                    print_v("Correct key found.")
+                    orig_ncch_key = int.from_bytes(key, byteorder="big")
+                    keys_set = True
+                    return
+                print_v("Corrupt file (invalid key).")
+
+        def check_path(path):
+            if not keys_set:
+                print_v(f"... {path}: ", end="")
+                if os.path.isfile(path):
+                    set_keys(path)
+                else:
+                    print_v("File doesn't exist.")
+
+        # check supplied path by boot9_path or --boot9
+        if args.boot9:
+            check_path(args.boot9)
+        check_path("boot9.bin")
+        check_path("boot9_prot.bin")
+        check_path(os.path.expanduser("~") + "/.3ds/boot9.bin")
+        check_path(os.path.expanduser("~") + "/.3ds/boot9_prot.bin")
+
+    if not keys_set:
+        error("Neither prod.keys nor bootROM found, encryption will not be supported")
 else:
     error("pyaes not found, encryption will not be supported")
 
