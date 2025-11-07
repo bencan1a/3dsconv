@@ -230,7 +230,7 @@ for arg in args.game:
             rom_name = os.path.basename(os.path.splitext(input_file)[0])
             cia_name = os.path.join(args.output, rom_name + ".cia")
             if not args.overwrite and os.path.isfile(cia_name):
-                error(f'"{cia_name}" already exists. Use `--overwrite\' to forceconversion.')
+                error(f'"{cia_name}" already exists. Use `--overwrite\' to force conversion.')
                 continue
             total_files += 1
             files.append([input_file, rom_name, cia_name])
