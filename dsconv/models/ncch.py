@@ -144,7 +144,9 @@ class NCCHHeader:
         - 0x1A4-0x1A8: ExeFS size
         """
         if len(data) < 0x200:
-            raise ValueError("Data too short for NCCH header")
+            raise ValueError(
+                f"Data too short for NCCH header (need at least 0x200 bytes, got {len(data)} bytes)"
+            )
 
         # Parse signature (0x000-0x100)
         signature = data[0x000:0x100]
