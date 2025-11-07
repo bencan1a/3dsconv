@@ -5,6 +5,15 @@
 
 [Decrypt9WIP](https://github.com/d0k3/Decrypt9WIP) and [GodMode9](https://github.com/d0k3/GodMode9) can dump game cards to CIA directly now, rendering this tool partially obsolete. It can still be used for existing game dumps, however.
 
+## Documentation
+
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute to the project
+- **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Development workflow guide
+- **[agents.md](agents.md)** - Complete project context for AI assistants
+- **[.github/copilot-instructions.md](.github/copilot-instructions.md)** - GitHub Copilot guidance
+- **[Test-Automation-Plan.md](Test-Automation-Plan.md)** - Testing strategy
+- **[docs/adr/](docs/adr/)** - Architecture Decision Records
+
 ## Usage
 ### Basic use
 On Windows, CCIs can be dragged on top of `3dsconv.exe`. See [Encryption](#encryption) for details about encrypted files.
@@ -80,3 +89,12 @@ Using [py2exe for Python 3](https://pypi.python.org/pypi/py2exe/), you can pack 
 * `3dsconv.py` and [pyaes](https://github.com/ricmoo/pyaes) are under the MIT license.
 
 For versions older than "2.0", see this [Gist](https://gist.github.com/ihaveamac/dfc01fa09483c275f72ad69cd7e8080f).
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+**For AI assistants (GitHub Copilot, Claude, etc.):**
+- Read [.github/copilot-instructions.md](.github/copilot-instructions.md) for coding guidance
+- See [agents.md](agents.md) for complete project context
+- Review [docs/adr/](docs/adr/) for architecture decisions
