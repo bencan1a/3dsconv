@@ -151,7 +151,7 @@ class TestRol:
             (2, 0b10101010),
             (3, 0b01010101),
             (4, 0b10101010),
-            (7, 0b01010101),  # 7 bits rotation of 10101010 = 01010101
+            (7, 0b01010101),  # 10101010 << 7 = rotate 7 bits left = 01010101
         ],
     )
     def test_rol_alternating_bits_pattern(self, r_bits, expected):
