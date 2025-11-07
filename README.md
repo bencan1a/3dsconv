@@ -17,8 +17,8 @@ python3 3dsconv.py [options] game.3ds [game.3ds ...]
 ```
 
 * `--output=<dir>` - Save converted files in specified directory; default is current directory or value of variable `output-directory`
-* `--boot9=<file>` - Path to dump of protected ARM9 bootROM
-* `--prod-keys=<file>` - Path to prod.keys file containing encryption keys
+* `--boot9=<file>` - Path to dump of protected ARM9 bootROM (cannot be used with --prod-keys)
+* `--prod-keys=<file>` - Path to prod.keys file containing encryption keys (cannot be used with --boot9)
 * `--overwrite` - Overwrite existing converted files
 * `--ignore-bad-hashes` - Ignore invalid hashes and CCI files and convert anyway
 * `--ignore-encryption` - Ignore the encryption header value, assume the ROM as unencrypted
@@ -26,25 +26,31 @@ python3 3dsconv.py [options] game.3ds [game.3ds ...]
 * `--dev-keys` - Use developer-unit keys
 
 ## Encryption
-3dsconv requires encryption keys to decrypt files using Original NCCH encryption (slot 0x2C). You can provide these keys in two ways:
+3dsconv requires encryption keys to decrypt files using Original NCCH encryption (slot 0x2C). You can provide these keys in one of two ways (but not both):
 
 ### Option 1: prod.keys file (Recommended)
-A prod.keys file contains the necessary encryption keys in a simple key=value format. The file is checked for in the order of:
+A prod.keys file contains the necessary encryption keys in a simple key=value format. 
 
-* Value of option `--prod-keys=` or variable `PROD_KEYS_PATH`, if set
+**When specified with `--prod-keys`:** Only the specified file is used.
+
+**When not specified:** The file is automatically searched for in the following order:
 * `prod.keys` in current working directory
 * `~/.3ds/prod.keys`
 
 The prod.keys file must contain at least the `slot0x2CKey` entry. See `prod.keys.example` for the format.
 
 ### Option 2: boot9 bootROM
-Alternatively, you can provide the Nintendo 3DS full or protected ARM9 bootROM. The file is checked for in the order of:
+Alternatively, you can provide the Nintendo 3DS full or protected ARM9 bootROM.
 
-* Value of option `--boot9=` or variable `BOOT9_PATH`, if set
+**When specified with `--boot9`:** Only the specified file is used.
+
+**When not specified:** The file is automatically searched for in the following order:
 * `boot9.bin` (full) in current working directory
 * `boot9_prot.bin` (protected) in current working directory
 * `~/.3ds/boot9.bin` (full)
 * `~/.3ds/boot9_prot.bin` (protected)
+
+**Note:** If neither `--prod-keys` nor `--boot9` is specified, 3dsconv will search for prod.keys files first, then fall back to boot9 files if no prod.keys is found.
 
 boot9strap is required to dump. Setup can be found at [3DS Guide](https://3ds.guide/). Hold START+SELECT+X at boot to dump to `sdmc:/boot9strap/boot9.bin`.
 

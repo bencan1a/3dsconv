@@ -294,7 +294,7 @@ class TestParseArgs:
         assert args.prod_keys == "/flag/path/prod.keys"
 
     def test_parse_args_both_boot9_and_prod_keys(self, monkeypatch):
-        """Test that both --boot9 and --prod-keys can be specified."""
+        """Test that both --boot9 and --prod-keys can be parsed (validation happens at runtime)."""
         # Arrange
         test_args = [
             "3dsconv.py",
@@ -310,6 +310,7 @@ class TestParseArgs:
         args = parse_args()
 
         # Assert
+        # Both can be parsed; the mutual exclusivity check happens in the main script
         assert args.boot9 == "/path/to/boot9.bin"
         assert args.prod_keys == "/path/to/prod.keys"
         assert args.game == ["game.cci"]
