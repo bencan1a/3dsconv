@@ -21,12 +21,12 @@ def main():
 
     # Execute in a namespace that mimics being run as __main__
     namespace = {
-        '__name__': '__main__',
-        '__file__': script_path,
-        '__package__': None,
+        "__name__": "__main__",
+        "__file__": script_path,
+        "__package__": None,
     }
 
-    exec(compile(code, script_path, 'exec'), namespace)
+    exec(compile(code, script_path, "exec"), namespace)
 
 
 if __name__ == "__main__":
