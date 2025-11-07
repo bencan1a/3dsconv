@@ -6,6 +6,13 @@ import pytest
 
 from dsconv.models.ncch import NCCHHeader
 
+# Test constants for encryption flags
+ENCRYPTED_FLAG = 0x00  # Bit 2 not set = encrypted
+DECRYPTED_FLAG = 0x04  # Bit 2 set = decrypted
+ZEROKEY_FLAG = 0x01  # Bit 0 set = zero-key encryption
+ENCRYPTED_ZEROKEY_FLAG = ENCRYPTED_FLAG | ZEROKEY_FLAG  # 0x01
+DECRYPTED_ZEROKEY_FLAG = DECRYPTED_FLAG | ZEROKEY_FLAG  # 0x05
+
 
 class TestNCCHHeader:
     """Tests for NCCHHeader model."""
@@ -202,7 +209,7 @@ class TestNCCHHeader:
     def test_is_encrypted_property_with_encrypted_content(self):
         """Test is_encrypted returns True for encrypted content."""
         # Arrange - flags with bit 2 = 0 (encrypted)
-        flags = bytes(8)  # All zeros, bit 2 of byte 7 = 0
+        flags = bytes([0, 0, 0, 0, 0, 0, 0, ENCRYPTED_FLAG])
 
         header = NCCHHeader(
             signature=bytes(0x100),
@@ -225,7 +232,7 @@ class TestNCCHHeader:
     def test_is_encrypted_property_with_decrypted_content(self):
         """Test is_encrypted returns False for decrypted content."""
         # Arrange - flags with bit 2 = 1 (decrypted)
-        flags = bytes([0, 0, 0, 0, 0, 0, 0, 0x04])  # Byte 7 has bit 2 set
+        flags = bytes([0, 0, 0, 0, 0, 0, 0, DECRYPTED_FLAG])
 
         header = NCCHHeader(
             signature=bytes(0x100),
@@ -248,7 +255,7 @@ class TestNCCHHeader:
     def test_uses_zerokey_property_with_zerokey_encryption(self):
         """Test uses_zerokey property with zero-key encryption."""
         # Arrange - flags with bit 0 = 1 (zerokey)
-        flags = bytes([0, 0, 0, 0, 0, 0, 0, 0x01])  # Byte 7 has bit 0 set
+        flags = bytes([0, 0, 0, 0, 0, 0, 0, ZEROKEY_FLAG])
 
         header = NCCHHeader(
             signature=bytes(0x100),
@@ -369,7 +376,7 @@ class TestNCCHHeader:
 
         # Flags (0x188-0x190)
         data[0x188:0x190] = bytes(8)
-        data[0x18F] = 0x04  # Decrypted flag
+        data[0x18F] = DECRYPTED_FLAG  # Decrypted flag
 
         # ExeFS offset (0x1A0-0x1A4, little-endian)
         data[0x1A0:0x1A4] = struct.pack("<I", 0x2000)
@@ -389,7 +396,7 @@ class TestNCCHHeader:
         assert header.program_id == b"\x10\x20\x30\x40\x50\x60\x70\x80"
         assert len(header.extheader_hash) == 0x20
         assert header.extheader_size == 0x400
-        assert header.flags[7] == 0x04
+        assert header.flags[7] == DECRYPTED_FLAG
         assert header.exefs_offset == 0x2000
         assert header.exefs_size == 0x300
 
@@ -405,10 +412,26 @@ class TestNCCHHeader:
     @pytest.mark.parametrize(
         "flags,is_encrypted,uses_zerokey",
         [
-            (bytes([0, 0, 0, 0, 0, 0, 0, 0x00]), True, False),  # Encrypted, not zerokey
-            (bytes([0, 0, 0, 0, 0, 0, 0, 0x01]), True, True),  # Encrypted with zerokey
-            (bytes([0, 0, 0, 0, 0, 0, 0, 0x04]), False, False),  # Decrypted
-            (bytes([0, 0, 0, 0, 0, 0, 0, 0x05]), False, True),  # Decrypted (zerokey flag set)
+            (
+                bytes([0, 0, 0, 0, 0, 0, 0, ENCRYPTED_FLAG]),
+                True,
+                False,
+            ),  # Encrypted, not zerokey
+            (
+                bytes([0, 0, 0, 0, 0, 0, 0, ENCRYPTED_ZEROKEY_FLAG]),
+                True,
+                True,
+            ),  # Encrypted with zerokey
+            (
+                bytes([0, 0, 0, 0, 0, 0, 0, DECRYPTED_FLAG]),
+                False,
+                False,
+            ),  # Decrypted
+            (
+                bytes([0, 0, 0, 0, 0, 0, 0, DECRYPTED_ZEROKEY_FLAG]),
+                False,
+                True,
+            ),  # Decrypted (zerokey flag set)
         ],
     )
     def test_encryption_flag_combinations(self, flags, is_encrypted, uses_zerokey):
