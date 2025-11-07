@@ -250,7 +250,7 @@ if args.use_deprecated:
         "for more details."
     )
 
-# print if pyaes is found, and search for prod.keys or boot9 if it is
+# print if pyaes is found, and search for prod.keys first, then boot9 if needed
 # then get the original NCCH key from it
 keys_set = False
 orig_ncch_key = 0
@@ -262,7 +262,7 @@ if pyaes_found:
 
             global keys_set, orig_ncch_key
             print_v(f"Attempting to load keys from {prod_keys_file}...")
-            orig_ncch_key = get_slot0x2c_key_from_prod_keys(prod_keys_file, args.dev_keys)
+            orig_ncch_key = get_slot0x2c_key_from_prod_keys(prod_keys_file)
             print_v("Successfully loaded slot0x2CKey from prod.keys")
             keys_set = True
             return True
@@ -338,7 +338,19 @@ if pyaes_found:
         check_path(os.path.expanduser("~") + "/.3ds/boot9_prot.bin")
 
     if not keys_set:
-        error("Neither prod.keys nor bootROM found, encryption will not be supported")
+        error(
+            "Neither prod.keys nor bootROM found, encryption will not be supported.\n"
+            "Searched for prod.keys in:\n"
+            f"  - {args.prod_keys if args.prod_keys else '(not specified)'}\n"
+            "  - prod.keys\n"
+            "  - ~/.3ds/prod.keys\n"
+            "Searched for boot9 in:\n"
+            f"  - {args.boot9 if args.boot9 else '(not specified)'}\n"
+            "  - boot9.bin\n"
+            "  - boot9_prot.bin\n"
+            "  - ~/.3ds/boot9.bin\n"
+            "  - ~/.3ds/boot9_prot.bin"
+        )
 else:
     error("pyaes not found, encryption will not be supported")
 

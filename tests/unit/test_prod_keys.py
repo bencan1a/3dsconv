@@ -117,7 +117,10 @@ class TestParseProdKeys:
     def test_parse_prod_keys_file_not_found(self):
         """Test that FileNotFoundError is raised for non-existent files."""
         # Arrange
-        non_existent_file = "/tmp/this_file_does_not_exist_12345.keys"
+        # Create a path that definitely doesn't exist without relying on /tmp
+        import uuid
+
+        non_existent_file = f"this_file_does_not_exist_{uuid.uuid4()}.keys"
 
         # Act & Assert
         with pytest.raises(FileNotFoundError):
@@ -229,7 +232,10 @@ class TestGetSlot0x2cKeyFromProdKeys:
     def test_get_slot0x2c_key_file_not_found(self):
         """Test that FileNotFoundError is raised for non-existent files."""
         # Arrange
-        non_existent_file = "/tmp/this_file_does_not_exist_12345.keys"
+        # Create a path that definitely doesn't exist without relying on /tmp
+        import uuid
+
+        non_existent_file = f"this_file_does_not_exist_{uuid.uuid4()}.keys"
 
         # Act & Assert
         with pytest.raises(FileNotFoundError):

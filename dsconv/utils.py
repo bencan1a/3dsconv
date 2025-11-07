@@ -188,13 +188,12 @@ def parse_prod_keys(prod_keys_path: str) -> dict[str, str]:
     return keys
 
 
-def get_slot0x2c_key_from_prod_keys(prod_keys_path: str, dev_keys: bool = False) -> int:
+def get_slot0x2c_key_from_prod_keys(prod_keys_path: str) -> int:
     """
     Extract the slot 0x2C key from a prod.keys file.
 
     Args:
         prod_keys_path: Path to the prod.keys file
-        dev_keys: Whether to look for developer keys (currently not used for prod.keys)
 
     Returns:
         The slot 0x2C key as an integer
