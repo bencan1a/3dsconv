@@ -60,6 +60,25 @@ This directory contains comprehensive documentation for refactoring the 3dsconv 
 - Troubleshooting
 - Checking task completion
 
+### 💬 [sample-prompts.md](./sample-prompts.md)
+**Agent Prompt Templates** - Ready-to-use prompts for task execution
+
+- **Purpose**: Example prompts for delegating tasks to Copilot or other agents
+- **Audience**: Anyone assigning work to AI agents or developers
+- **Contents**:
+  - General prompt template
+  - 5 detailed example prompts (simple to complex)
+  - Tips for writing effective prompts
+  - Recommended task order for learning
+  - Troubleshooting prompt patterns
+  - Verification checklist template
+
+**Use this when:**
+- Assigning a refactoring task to an agent
+- Need a template for task delegation
+- Want to ensure agents use the planning documents
+- Learning how to structure effective prompts
+
 ## How to Use These Documents
 
 ### For Project Planning
@@ -70,10 +89,11 @@ This directory contains comprehensive documentation for refactoring the 3dsconv 
 
 ### For Implementation
 1. Pick a task from `refactoring-plan.md`
-2. Open `implementation-guide.md` for detailed instructions
-3. Follow the step-by-step workflow
-4. Reference `quick-reference.md` for commands and snippets
-5. Check quality criteria before marking complete
+2. Use a prompt template from `sample-prompts.md` (if delegating to an agent)
+3. Open `implementation-guide.md` for detailed instructions
+4. Follow the step-by-step workflow
+5. Reference `quick-reference.md` for commands and snippets
+6. Check quality criteria before marking complete
 
 ### For Code Review
 1. Verify task follows patterns in `implementation-guide.md`
@@ -150,8 +170,9 @@ We'll know the refactoring is successful when:
 1. Read the **Executive Summary** in `refactoring-plan.md`
 2. Review the **Target Architecture** section
 3. Pick a task from **Phase 1** (domain models are easiest)
-4. Follow the **Step-by-Step Task Execution** in `implementation-guide.md`
-5. Use `quick-reference.md` for commands and snippets
+4. Copy a prompt from `sample-prompts.md` (e.g., Example 1 for Task 1.1)
+5. Follow the **Step-by-Step Task Execution** in `implementation-guide.md`
+6. Use `quick-reference.md` for commands and snippets
 
 ### For Experienced Developers
 1. Scan `refactoring-plan.md` for your assigned phase
@@ -159,12 +180,19 @@ We'll know the refactoring is successful when:
 3. Reference `implementation-guide.md` for patterns
 4. Use `quick-reference.md` as needed
 
+### For Delegating to AI Agents
+1. Identify the task in `refactoring-plan.md`
+2. Copy and customize a prompt from `sample-prompts.md`
+3. Ensure the agent has access to all planning documents
+4. Verify the output against acceptance criteria
+
 ## File Naming Conventions
 
 All plan documents follow this pattern:
 - `refactoring-plan.md` - Strategic overview
 - `implementation-guide.md` - Tactical details
 - `quick-reference.md` - Quick lookup
+- `sample-prompts.md` - Agent prompt templates
 - Future: `phase-N-notes.md` - Phase-specific findings
 
 ## Questions?
@@ -180,6 +208,9 @@ See "Command Cheat Sheet" in `quick-reference.md`
 
 ### Testing Questions
 See "Testing Patterns" in `implementation-guide.md`
+
+### Prompt Writing Questions
+See examples in `sample-prompts.md`
 
 ## Related Documents
 
@@ -203,7 +234,8 @@ When adding new documentation:
 | refactoring-plan.md | 1.0 | 2025-11-07 |
 | implementation-guide.md | 1.0 | 2025-11-07 |
 | quick-reference.md | 1.0 | 2025-11-07 |
-| README.md (this file) | 1.0 | 2025-11-07 |
+| sample-prompts.md | 1.0 | 2025-11-07 |
+| README.md (this file) | 1.1 | 2025-11-07 |
 
 ---
 
