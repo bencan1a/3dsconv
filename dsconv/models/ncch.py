@@ -15,6 +15,20 @@ class NCCHHeader:
     The NCCH header is 0x200 bytes and contains metadata about the
     content, including size, encryption flags, partition ID, and hashes.
 
+    Fields Included:
+        This dataclass includes only the fields required for CCI to CIA
+        conversion. The full NCCH header contains additional fields for
+        RomFS, plain region, and logo region that are not needed for the
+        conversion process and are therefore omitted.
+
+    Fields Omitted:
+        - Verification hash (0x114-0x118): Not used in conversion
+        - Reserved regions (0x120-0x160, 0x184-0x188)
+        - Plain region offset/length (0x190-0x1A0)
+        - Logo region offset/length (not used)
+        - ExeFS hash region size (0x1A8-0x1AC)
+        - RomFS offset/size/hash (0x1AC-0x200)
+
     Reference: 3dbrew.org/wiki/NCCH
     """
 
@@ -24,19 +38,12 @@ class NCCHHeader:
     partition_id: bytes  # 0x108-0x110: Partition ID (8 bytes)
     maker_code: bytes  # 0x110-0x112: Maker code (2 bytes)
     version: int  # 0x112-0x114: Version (2 bytes)
-    # 0x114-0x118: Verification hash (4 bytes) - not used in conversion
     program_id: bytes  # 0x118-0x120: Program ID / Title ID (8 bytes)
-    # 0x120-0x160: Reserved (64 bytes)
-    # 0x160-0x180: Extended header hash (32 bytes)
     extheader_hash: bytes  # 0x160-0x180: Extended header SHA-256 hash
     extheader_size: int  # 0x180-0x184: Extended header size (4 bytes)
-    # 0x184-0x188: Reserved (4 bytes)
     flags: bytes  # 0x188-0x190: Flags (8 bytes)
-    # 0x190-0x1A0: Plain region offset and length (16 bytes)
     exefs_offset: int  # 0x1A0-0x1A4: ExeFS offset in media units
     exefs_size: int  # 0x1A4-0x1A8: ExeFS size in media units
-    # 0x1A8-0x1B8: ExeFS hash region size and RomFS offset (16 bytes)
-    # 0x1B8-0x200: Logo hash, RomFS hash, RomFS size (72 bytes)
 
     def __post_init__(self):
         """Validate header fields."""
