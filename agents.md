@@ -360,6 +360,132 @@ Recent work has focused on modernizing argument parsing using argparse.
 - **Decrypt9WIP**: https://github.com/d0k3/Decrypt9WIP
 - **GodMode9**: https://github.com/d0k3/GodMode9
 
+## Pytest Best Practices & Anti-Patterns
+
+### Critical Best Practices
+
+**Fixture Management**
+- Use `conftest.py` for shared fixtures across test files
+- Scope fixtures appropriately: `function` (default), `class`, `module`, `session`
+- Use `tmp_path` (function-scoped) or `tmp_path_factory` (session-scoped) for temp files, NOT manual cleanup
+- Name fixtures descriptively: `sample_cci_file`, `mock_boot9`, not `fixture1`
+
+**Test Structure**
+- Follow Arrange-Act-Assert (AAA) pattern religiously
+- One logical assertion per test (multiple asserts OK if testing same concept)
+- Name tests: `test_<function>_<scenario>_<expected>` (e.g., `test_parse_args_no_args_shows_help`)
+- Keep tests under 20 lines; extract setup to fixtures if longer
+
+**Mocking & Patching**
+- Mock at the boundary: patch where imported, not where defined
+- Use `mocker.patch()` (pytest-mock) over `unittest.mock.patch` for auto-cleanup
+- Mock file I/O for unit tests; use real files for integration tests with `tmp_path`
+- Verify mock calls with `assert_called_once_with()`, not `assert called`
+
+**Parametrization**
+- Use `@pytest.mark.parametrize` for multiple input scenarios
+- Name parameters clearly: `@pytest.mark.parametrize("input_val,expected", [...])`
+- Test edge cases: empty, None, zero, negative, max values, malformed input
+
+**Binary & Crypto Testing**
+- Use `bytes.fromhex()` for readable binary test data
+- Store test binary files in `tests/fixtures/` directory
+- Test crypto with known good input/output pairs from reference implementations
+- Verify hash calculations against pre-computed values
+
+### Critical Anti-Patterns (NEVER DO)
+
+**DON'T: Use global state or modify module globals in tests**
+```python
+# WRONG
+def test_conversion():
+    global args
+    args = parse_args()  # Pollutes global state
+```
+Fix: Mock or pass as parameter
+
+**DON'T: Test implementation details**
+```python
+# WRONG
+def test_internal_hash_var():
+    assert obj._internal_hash == "abc"  # Tests private implementation
+```
+Fix: Test public behavior and outputs
+
+**DON'T: Use `assert True` or empty assertions**
+```python
+# WRONG
+def test_parse():
+    parse_args()
+    assert True  # Meaningless
+```
+Fix: Assert specific behavior or use `with pytest.raises()` for error tests
+
+**DON'T: Ignore test failures with bare `except` or `pass`**
+```python
+# WRONG
+def test_convert():
+    try:
+        convert()
+    except:
+        pass  # Silently fails
+```
+Fix: Let exceptions propagate or use `pytest.raises(SpecificException)`
+
+**DON'T: Share state between tests**
+```python
+# WRONG
+class TestConversion:
+    def setup_class(cls):
+        cls.output_file = "test.cia"  # Shared across all tests
+```
+Fix: Use `setup_method()` or function-scoped fixtures
+
+**DON'T: Hardcode paths or use current directory**
+```python
+# WRONG
+def test_output():
+    with open("output.txt", "w") as f:  # Pollutes project dir
+```
+Fix: Use `tmp_path` fixture
+
+**DON'T: Create tests that depend on execution order**
+```python
+# WRONG - test_b depends on test_a running first
+def test_a_create_file():
+    Path("data.txt").write_text("test")
+
+def test_b_read_file():
+    assert Path("data.txt").read_text() == "test"
+```
+Fix: Make tests independent with fixtures
+
+### Project-Specific Testing Guidelines
+
+**For 3dsconv Binary Format Tests**
+- Create minimal valid CCI/NCCH test files (< 1KB) with proper magic values
+- Test each encryption path separately: decrypted, Original NCCH, zerokey
+- Use `monkeypatch` to simulate missing boot9/pyaes scenarios
+- Mock `struct.unpack()` returns for boundary testing without large files
+
+**For CLI Argument Tests**
+- Capture stdout/stderr with `capsys` fixture
+- Test `sys.exit()` calls with `pytest.raises(SystemExit)`
+- Use `monkeypatch.setattr("sys.argv", [...])` for argv testing
+- Test both short (`-v`) and long (`--verbose`) option forms
+
+**For File I/O Heavy Code**
+- Integration tests: Use `tmp_path` with real but minimal test files
+- Unit tests: Mock `open()`, `seek()`, `read()`, `write()` calls
+- Test chunk reading with controlled `read_size` values
+- Verify file handles are closed (use context managers)
+
+**Coverage Requirements**
+- Aim for 80%+ line coverage, 70%+ branch coverage
+- Focus on critical paths: encryption, hash validation, CIA structure
+- Don't test embedded data (certchain, ticket_tmd constants)
+- Skip coverage for error messages and verbose output formatting
+
 ## Quick Reference
 
 ### File Extensions
