@@ -395,7 +395,122 @@ class ConversionService:
             icon: Icon data from ExeFS
             encryption_ctx: Encryption context
         """
-        # TODO: Implement CIA writing
-        # This will be implemented by calling methods on cia_writer
-        # and coordinating with other readers to copy content sections
-        pass
+        import base64
+        import itertools
+        import math
+        import zlib
+
+        # Get template data from data module (not legacy to avoid module-level execution)
+        # NOTE: This is technical debt that should be refactored to separate modules
+        # See Task 8.2 for certificate chain extraction
+        # TODO: Create TicketBuilder and TMDBuilder classes (create GitHub issue)
+        from dsconv.data import certchain_retail, ticket_tmd
+
+        # Calculate content sizes
+        game_cxi_size = game_partition.size * 0x200  # Convert from media units to bytes
+        content_size = game_cxi_size
+
+        # Build CIA header using the data format from legacy implementation
+        # Content count is 1 (only game CXI)
+        content_count = 1
+        content_index = 0b10000000  # First content
+
+        # TMD size includes base size (0xB04) plus content records (0x30 per content)
+        tmd_size = 0xB04 + (content_count * 0x30)
+
+        # Build CIA header structure (0x2020 bytes total)
+        header = (
+            struct.pack("<IHHII", 0x2020, 0, 0, 0xA00, 0x350)  # Header size, type, version, cert chain size, ticket size
+            + struct.pack("<III", tmd_size, 0x3AC0, content_size)  # TMD size, meta size, content size
+            + struct.pack("<IB", 0, content_index)  # Reserved + content index
+            + bytes(0x201F)  # Padding to 0x2020 bytes
+        )
+
+        # Get certificate chain (retail or dev)
+        if self.cia_writer.dev_mode:
+            # TODO: Load dev certchain from file (Task 8.2)
+            raise NotImplementedError("Dev certificate chain loading not yet implemented")
+        else:
+            certchain = zlib.decompress(base64.b64decode(certchain_retail))
+
+        # Get ticket and TMD templates
+        ticket_tmd_template = zlib.decompress(base64.b64decode(ticket_tmd))
+
+        # Prepare chunk records for TMD content info
+        chunk_records = bytearray()
+        # Content ID 0, Index 0x0
+        chunk_records += struct.pack(">III", 0, 0, 0)  # Content ID, Index, Type
+        chunk_records += struct.pack(">I", game_cxi_size)  # Content size
+        chunk_records += bytes(0x20)  # SHA-256 hash placeholder
+
+        # Write CIA file
+        # Seek to beginning
+        self.cia_writer.writer.file.seek(0)
+
+        # Write header
+        self.cia_writer.writer.file.write(header)
+
+        # Write certificate chain
+        self.cia_writer.writer.file.write(certchain)
+
+        # Write ticket and TMD (with placeholder data)
+        self.cia_writer.writer.file.write(ticket_tmd_template)
+        self.cia_writer.writer.file.write(bytes(0x96C))  # Padding after ticket/tmd template
+
+        # Write chunk records + padding
+        self.cia_writer.writer.file.write(bytes(chunk_records))
+        tmd_padding = bytes(16 * (content_count - 1))  # No extra padding for single content
+        self.cia_writer.writer.file.write(tmd_padding)
+
+        # Update content count in TMD
+        self.cia_writer.writer.file.seek(0x2F9F)
+        self.cia_writer.writer.file.write(bytes([content_count]))
+
+        # Update title ID in ticket and TMD
+        title_id = container.title_id
+        self.cia_writer.writer.file.seek(0x2C1C)
+        self.cia_writer.writer.file.write(title_id)
+        self.cia_writer.writer.file.seek(0x2F4C)
+        self.cia_writer.writer.file.write(title_id)
+
+        # Read save size from extheader (offset 0x1C0 in extheader, 8 bytes)
+        save_size = extheader[0x1C0:0x1C8]
+        self.cia_writer.writer.file.seek(0x2F5A)
+        self.cia_writer.writer.file.write(save_size)
+
+        # Write game CXI content
+        # Start with NCCH header + first-half ExtHeader
+        # Read the raw NCCH header bytes from source
+        game_cxi_offset = game_partition.offset * 0x200
+        ncch_header_bytes = self.ncch_reader.reader.read_at(game_cxi_offset, 0x200)
+        
+        self.cia_writer.writer.file.seek(0, 2)  # Seek to end
+        game_cxi_hash = hashlib.sha256(ncch_header_bytes + extheader)
+        self.cia_writer.writer.file.write(ncch_header_bytes + extheader)
+
+        # Write rest of game CXI content
+        self.progress_reporter.report_stage("Writing Game Executable CXI")
+        self.ncch_reader.reader.file.seek(game_cxi_offset + 0x200 + 0x400)
+        
+        left = game_cxi_size - 0x200 - 0x400
+        read_size = 0x800000  # 8MB chunks, same as legacy
+        
+        for _ in itertools.repeat(0, int(math.floor(game_cxi_size / read_size) + 1)):
+            to_read = min(read_size, left)
+            tmpread = self.ncch_reader.reader.file.read(to_read)
+            game_cxi_hash.update(tmpread)
+            self.cia_writer.writer.file.write(tmpread)
+            left -= read_size
+            
+            # Report progress
+            self.progress_reporter.report_progress(game_cxi_size - left, game_cxi_size)
+            
+            if left <= 0:
+                break
+
+        # Update TMD with game CXI hash
+        self.cia_writer.writer.file.seek(0x38D4)
+        self.cia_writer.writer.file.write(game_cxi_hash.digest())
+
+        # Flush to ensure all data is written
+        self.cia_writer.writer.file.flush()
