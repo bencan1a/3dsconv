@@ -511,6 +511,36 @@ class ConversionService:
         # Update TMD with game CXI hash
         self.cia_writer.writer.file.seek(0x38D4)
         self.cia_writer.writer.file.write(game_cxi_hash.digest())
+        
+        # Update chunk records with the game CXI hash
+        chunk_records[0x10:0x30] = game_cxi_hash.digest()
+        
+        # Calculate and write final hashes
+        # Chunk records hash
+        chunk_records_hash = hashlib.sha256(bytes(chunk_records))
+        self.cia_writer.writer.file.seek(0x2FC7)
+        self.cia_writer.writer.file.write(bytes([content_count]) + chunk_records_hash.digest())
+        
+        # Info records hash
+        info_records_hash = hashlib.sha256(
+            bytes(3) + bytes([content_count]) + chunk_records_hash.digest() + bytes(0x8DC)
+        )
+        self.cia_writer.writer.file.seek(0x2FA4)
+        self.cia_writer.writer.file.write(info_records_hash.digest())
+        
+        # Write Meta region
+        # Meta region structure: dependency_list (0x180 bytes) + flags (4 bytes) + padding (0xFC bytes) + icon
+        dependency_list = extheader[0x200:0x380]  # Dependency list from extheader
+        self.cia_writer.writer.file.seek(0, 2)  # Seek to end
+        self.cia_writer.writer.file.write(
+            dependency_list + bytes(0x180) + struct.pack("<I", 0x2) + bytes(0xFC) + icon
+        )
+        
+        # Pad to 64-byte alignment
+        current_pos = self.cia_writer.writer.file.tell()
+        aligned_pos = ((current_pos + 63) // 64) * 64
+        if aligned_pos > current_pos:
+            self.cia_writer.writer.file.write(bytes(aligned_pos - current_pos))
 
         # Flush to ensure all data is written
         self.cia_writer.writer.file.flush()
