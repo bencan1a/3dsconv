@@ -474,11 +474,16 @@ class TestConvertWithEncryptedContent:
     @pytest.fixture
     def service(self):
         """Create service with all mocked dependencies including decryption."""
+        cia_writer = Mock(spec=CIAWriter)
+        cia_writer.dev_mode = False  # Add dev_mode attribute
+        cia_writer.writer = Mock()  # Add writer attribute with file
+        cia_writer.writer.file = Mock()
+        cia_writer.writer.file.tell = Mock(return_value=0)  # Make tell() return an integer
         return ConversionService(
             ncsd_reader=Mock(spec=NCSDReader),
             ncch_reader=Mock(spec=NCCHReader),
             exefs_reader=Mock(spec=ExeFSReader),
-            cia_writer=Mock(spec=CIAWriter),
+            cia_writer=cia_writer,
             decryption_service=Mock(spec=DecryptionService),
             hash_validator=Mock(spec=HashValidator),
             progress_reporter=MockProgressReporter(),
@@ -821,11 +826,16 @@ class TestConvert:
     @pytest.fixture
     def service(self):
         """Create service with all mocked dependencies."""
+        cia_writer = Mock(spec=CIAWriter)
+        cia_writer.dev_mode = False  # Add dev_mode attribute
+        cia_writer.writer = Mock()  # Add writer attribute with file
+        cia_writer.writer.file = Mock()
+        cia_writer.writer.file.tell = Mock(return_value=0)  # Make tell() return an integer
         return ConversionService(
             ncsd_reader=Mock(spec=NCSDReader),
             ncch_reader=Mock(spec=NCCHReader),
             exefs_reader=Mock(spec=ExeFSReader),
-            cia_writer=Mock(spec=CIAWriter),
+            cia_writer=cia_writer,
             decryption_service=Mock(spec=DecryptionService),
             hash_validator=Mock(spec=HashValidator),
             progress_reporter=MockProgressReporter(),
