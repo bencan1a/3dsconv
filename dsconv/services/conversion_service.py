@@ -9,10 +9,13 @@ for all components, making it highly testable and maintainable.
 """
 
 import hashlib
+import itertools
+import math
 import struct
 from typing import TYPE_CHECKING
 
 from dsconv.crypto.decryption_service import DecryptionService
+from dsconv.data import get_ticket_tmd_template
 from dsconv.io.cia_writer import CIAWriter
 from dsconv.io.exefs_reader import ExeFSReader
 from dsconv.io.ncch_reader import NCCHReader
@@ -395,16 +398,10 @@ class ConversionService:
             icon: Icon data from ExeFS
             encryption_ctx: Encryption context
         """
-        import base64
-        import itertools
-        import math
-        import zlib
-
         # Get template data from data module (not legacy to avoid module-level execution)
         # NOTE: This is technical debt that should be refactored to separate modules
         # See Task 8.2 for certificate chain extraction
         # TODO: Create TicketBuilder and TMDBuilder classes (create GitHub issue)
-        from dsconv.data import certchain_retail, ticket_tmd
 
         # Calculate content sizes
         game_cxi_size = game_partition.size * 0x200  # Convert from media units to bytes
@@ -431,14 +428,10 @@ class ConversionService:
         )
 
         # Get certificate chain (retail or dev)
-        if self.cia_writer.dev_mode:
-            # TODO: Load dev certchain from file (Task 8.2)
-            raise NotImplementedError("Dev certificate chain loading not yet implemented")
-        else:
-            certchain = zlib.decompress(base64.b64decode(certchain_retail))
+        certchain = self.cia_writer.cert_chain
 
         # Get ticket and TMD templates
-        ticket_tmd_template = zlib.decompress(base64.b64decode(ticket_tmd))
+        ticket_tmd_template = get_ticket_tmd_template()
 
         # Prepare chunk records for TMD content info
         chunk_records = bytearray()
