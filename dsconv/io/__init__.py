@@ -1,5 +1,6 @@
 """I/O operations for 3dsconv."""
 
 from .binary_reader import BinaryReader
+from .ncch_reader import NCCHReader
 
-__all__ = ["BinaryReader"]
+__all__ = ["BinaryReader", "NCCHReader"]
