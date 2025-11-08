@@ -1,1 +1,1 @@
-"""Tests for validation module."""
+"""Test package for validation module."""
