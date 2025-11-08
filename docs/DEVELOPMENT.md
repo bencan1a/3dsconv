@@ -12,7 +12,34 @@ This guide provides step-by-step workflows for common development tasks in the 3
 
 ## Initial Setup
 
-### 1. Fork and Clone Repository
+### Option 1: Using Dev Container (Recommended)
+
+The easiest way to get started is using a dev container:
+
+**GitHub Codespaces:**
+```bash
+# 1. Go to the repository on GitHub
+# 2. Click "Code" → "Codespaces" → "Create codespace on main"
+# 3. Wait for the container to build
+# 4. Everything is ready - all dev tools are installed!
+```
+
+**VS Code with Remote - Containers:**
+```bash
+# 1. Install the "Remote - Containers" extension
+# 2. Clone the repository
+git clone https://github.com/YOUR_USERNAME/3dsconv.git
+cd 3dsconv
+# 3. Press F1 and select "Remote-Containers: Reopen in Container"
+# 4. Wait for the container to build
+# 5. All dev tools are installed automatically!
+```
+
+See [`.devcontainer/README.md`](../.devcontainer/README.md) for more details.
+
+### Option 2: Manual Setup
+
+#### 1. Fork and Clone Repository
 
 ```bash
 # Fork on GitHub, then clone your fork
@@ -23,7 +50,7 @@ cd 3dsconv
 git remote add upstream https://github.com/ihaveamac/3dsconv.git
 ```
 
-### 2. Set Up Development Environment
+#### 2. Set Up Development Environment
 
 ```bash
 # Create virtual environment
@@ -42,7 +69,7 @@ pip install -e ".[dev]"
 pytest --version
 ```
 
-### 3. Verify Everything Works
+#### 3. Verify Everything Works
 
 ```bash
 # Run tests

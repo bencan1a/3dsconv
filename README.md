@@ -14,6 +14,16 @@
 - **[Test-Automation-Plan.md](Test-Automation-Plan.md)** - Testing strategy
 - **[docs/adr/](docs/adr/)** - Architecture Decision Records
 
+## Development Environment
+
+This project includes a `.devcontainer` configuration for easy setup with:
+- **GitHub Codespaces**: Click "Code" → "Codespaces" → "Create codespace"
+- **VS Code Remote - Containers**: Open in VS Code and select "Reopen in Container"
+
+The dev container automatically installs all development tools (pytest, black, ruff, mypy) and dependencies. See [`.devcontainer/README.md`](.devcontainer/README.md) for details.
+
+For manual setup, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Usage
 ### Basic use
 On Windows, CCIs can be dragged on top of `3dsconv.exe`. See [Encryption](#encryption) for details about encrypted files.
