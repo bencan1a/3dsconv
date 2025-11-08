@@ -3,7 +3,7 @@
 This package contains high-level services that orchestrate the conversion
 workflow, including progress reporting and configuration management.
 """
-
+from .conversion_config import ConversionConfig
 from .progress_reporter import (
     ConsoleProgressReporter,
     IProgressReporter,
@@ -14,4 +14,5 @@ __all__ = [
     "ConsoleProgressReporter",
     "IProgressReporter",
     "MockProgressReporter",
+    "ConversionConfig",
 ]
