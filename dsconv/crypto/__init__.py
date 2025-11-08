@@ -5,6 +5,8 @@ for Nintendo 3DS content conversion.
 """
 
 from .aes_adapter import IAESCipher, MockAESAdapter, PyAESAdapter
+from .decryption_service import DecryptionService
+from .key_derivation import KeyDerivationService
 from .key_provider import (
     Boot9KeyProvider,
     IKeyProvider,
@@ -20,6 +22,10 @@ __all__ = [
     "IAESCipher",
     "PyAESAdapter",
     "MockAESAdapter",
+    # Key derivation
+    "KeyDerivationService",
+    # Decryption service
+    "DecryptionService",
     # Key providers
     "IKeyProvider",
     "ProdKeysKeyProvider",
@@ -30,6 +36,3 @@ __all__ = [
     "KeyNotFoundError",
     "InvalidKeyFileError",
 ]
-from .key_derivation import KeyDerivationService
-
-__all__ = ["IAESCipher", "PyAESAdapter", "MockAESAdapter", "KeyDerivationService"]
