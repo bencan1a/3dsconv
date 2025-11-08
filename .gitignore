@@ -1,4 +1,8 @@
 # ignore roms and stuff
+# Ignore files in roms/ directory, but keep roms/examples/
+roms/*
+!roms/examples/
+
 *.3ds
 *.cci
 *.csu
@@ -7,6 +11,15 @@
 *.xorpad
 *.exe
 *.bin
+
+# But DO include these file types in roms/examples/
+!roms/examples/**/*.3ds
+!roms/examples/**/*.cci
+!roms/examples/**/*.csu
+!roms/examples/**/*.cia
+!roms/examples/**/*.cxi
+!roms/examples/**/*.xorpad
+!roms/examples/**/*.bin
 *.egg-info
 ncchinfo.bin
 work/
