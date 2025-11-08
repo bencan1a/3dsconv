@@ -25,8 +25,13 @@ from pathlib import Path
 
 
 def compute_hash(file_path: Path) -> tuple[str, str]:
-    """Compute MD5 and SHA256 of a file."""
-    md5 = hashlib.md5()
+    """Compute MD5 and SHA256 of a file.
+    
+    MD5 is used here for integrity verification and comparison of known output files,
+    not for cryptographic security. The script compares both MD5 and SHA256 to validate
+    that refactored code produces identical output to the legacy implementation.
+    """
+    md5 = hashlib.md5()  # codeql[py/weak-cryptographic-algorithm]
     sha256 = hashlib.sha256()
 
     with open(file_path, 'rb') as f:
