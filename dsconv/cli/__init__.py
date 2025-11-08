@@ -5,5 +5,6 @@ command-line interface (argparse) and the domain layer (ConversionConfig).
 """
 
 from .config_mapper import CLIConfigMapper
+from .main import main
 
-__all__ = ["CLIConfigMapper"]
+__all__ = ["CLIConfigMapper", "main"]
