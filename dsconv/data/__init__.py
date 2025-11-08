@@ -2,13 +2,16 @@
 
 This module contains the binary data templates used for CIA file generation.
 These are base64-encoded, zlib-compressed templates that are decompressed
-at runtime.
+at runtime and cached for performance.
 
 TODO: This is technical debt. These should be moved to:
 - dsconv/crypto/certchain_provider.py for certificate chains (Task 8.2)
 - dsconv/data/templates/ for ticket/TMD templates
 - Ideally, use programmatic builders instead of hardcoded templates
 """
+
+import base64
+import zlib
 
 # Retail CIA certificate chain (base64-encoded, zlib-compressed)
 certchain_retail = b"""
@@ -53,3 +56,20 @@ JWFnDuv/P7kyh1k="""
 ticket_tmd = b"""
 eJxjYGRgYRgFZIOg/PwSXWdHAwgw1o0IhjKTaW83I+2toJMlBAAjgwiQXAPEIlA2CGgwQFzXAsbM
 EMH/BMBAOB8vGM1/FAH0/OccAGUmEacfR/J2AAAmBS75"""
+
+# Cache for decompressed templates (performance optimization)
+_ticket_tmd_cache: bytes | None = None
+
+
+def get_ticket_tmd_template() -> bytes:
+    """Get decompressed ticket/TMD template.
+    
+    Returns the ticket/TMD template, decompressing and caching it on first access.
+    
+    Returns:
+        Decompressed ticket/TMD template bytes
+    """
+    global _ticket_tmd_cache
+    if _ticket_tmd_cache is None:
+        _ticket_tmd_cache = zlib.decompress(base64.b64decode(ticket_tmd))
+    return _ticket_tmd_cache

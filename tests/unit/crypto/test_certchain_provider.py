@@ -75,6 +75,9 @@ class TestGetRetailCertchain:
         # This is a defensive test - in practice, this should never happen
         # since the embedded data is valid, but we test error handling anyway
         import zlib
+        
+        # Clear the cache to ensure decompression is attempted
+        CertChainProvider._retail_certchain_cache = None
 
         # Mock zlib.decompress to raise an error
         def mock_decompress(data):

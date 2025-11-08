@@ -48,13 +48,16 @@ class CertChainProvider:
         os.path.expanduser("~/.3ds/certchain-dev.bin"),
     ]
 
+    # Cache for decompressed retail certchain (performance optimization)
+    _retail_certchain_cache: bytes | None = None
+
     @staticmethod
     def get_retail_certchain() -> bytes:
         """Get retail certificate chain.
 
         Returns the embedded retail certificate chain used for signing
         retail CIA files. The certificate chain is stored compressed
-        and is decompressed on each call.
+        and is decompressed on first access, then cached for subsequent calls.
 
         Returns:
             Certificate chain bytes (0xA00 bytes)
@@ -62,6 +65,10 @@ class CertChainProvider:
         Raises:
             RuntimeError: If decompression fails (should never happen)
         """
+        # Return cached version if available (performance optimization)
+        if CertChainProvider._retail_certchain_cache is not None:
+            return CertChainProvider._retail_certchain_cache
+
         # Retail certchain compressed and base64-encoded
         certchain_retail = b"""
 eJytkvk/E44fx9GsT58ZsrlvaUmxMJ8RQiTXx50wRRbmWObKkTnTZ5FQxsxNJlfKyvGNCpnJbY7k
@@ -101,7 +108,11 @@ pSLLvMAGmw9/oJDbIM+w9N1rQQ+sxPYUrkQZeIxeDrTXxYnm6T1LffRCdMaVqr5ObS1Wxbnu0wKw
 JWFnDuv/P7kyh1k="""
 
         try:
-            return zlib.decompress(base64.b64decode(certchain_retail))
+            # Decompress and cache
+            CertChainProvider._retail_certchain_cache = zlib.decompress(
+                base64.b64decode(certchain_retail)
+            )
+            return CertChainProvider._retail_certchain_cache
         except Exception as e:
             raise RuntimeError(f"Failed to decompress retail certchain: {e}") from e
 

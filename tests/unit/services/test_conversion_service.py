@@ -476,6 +476,7 @@ class TestConvertWithEncryptedContent:
         """Create service with all mocked dependencies including decryption."""
         cia_writer = Mock(spec=CIAWriter)
         cia_writer.dev_mode = False  # Add dev_mode attribute
+        cia_writer.cert_chain = b"mock_cert_chain"  # Add cert_chain attribute
         cia_writer.writer = Mock()  # Add writer attribute with file
         cia_writer.writer.file = Mock()
         cia_writer.writer.file.tell = Mock(return_value=0)  # Make tell() return an integer
@@ -828,6 +829,7 @@ class TestConvert:
         """Create service with all mocked dependencies."""
         cia_writer = Mock(spec=CIAWriter)
         cia_writer.dev_mode = False  # Add dev_mode attribute
+        cia_writer.cert_chain = b"mock_cert_chain"  # Add cert_chain attribute
         cia_writer.writer = Mock()  # Add writer attribute with file
         cia_writer.writer.file = Mock()
         cia_writer.writer.file.tell = Mock(return_value=0)  # Make tell() return an integer
