@@ -30,3 +30,6 @@ __all__ = [
     "KeyNotFoundError",
     "InvalidKeyFileError",
 ]
+from .key_derivation import KeyDerivationService
+
+__all__ = ["IAESCipher", "PyAESAdapter", "MockAESAdapter", "KeyDerivationService"]
