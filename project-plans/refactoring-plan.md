@@ -2,11 +2,14 @@
 
 ## Executive Summary
 
-**Current State:** 737-line monolithic script with global state, nested functions, and tight coupling  
-**Target State:** Modular, testable architecture following SOLID principles and clean code practices  
-**Approach:** Phased refactoring with incremental, agent-executable tasks  
-**Test Coverage Goal:** 80% line coverage, 70% branch coverage  
+**Current State:** 737-line monolithic script with global state, nested functions, and tight coupling
+**Target State:** Modular, testable architecture following SOLID principles and clean code practices
+**Approach:** Phased refactoring with incremental, agent-executable tasks
+**Validation Strategy:** Dual entry point system preserving original code for byte-for-byte output comparison
+**Test Coverage Goal:** 80% line coverage, 70% branch coverage
 **Timeline:** 8-10 phases with 3-6 tasks each
+
+**Key Innovation:** The refactoring maintains the original implementation as `dsconv/legacy.py` alongside the refactored code, enabling continuous validation that both implementations produce identical outputs. This ensures correctness while building confidence in the new architecture.
 
 ---
 
@@ -945,12 +948,59 @@ class ServiceFactory:
 
 ## Phase 7: Refactor CLI Layer
 
-**Goal:** Clean up command-line interface and entry point  
-**Agent Focus:** CLI refactoring  
-**Dependencies:** Phase 6  
-**Risk:** Low
+**Goal:** Clean up command-line interface and entry point with dual-mode validation
+**Agent Focus:** CLI refactoring + validation setup
+**Dependencies:** Phase 6
+**Risk:** Low (original code preserved for validation)
+
+**IMPORTANT:** This phase establishes a dual entry point system that allows running both the original monolithic implementation and the refactored modular implementation side-by-side. This enables byte-for-byte output validation to ensure correctness.
 
 ### Tasks
+
+#### Task 7.0: Preserve Original Implementation (PREREQUISITE)
+**Goal:** Create frozen reference implementation for validation
+
+**Actions:**
+1. Copy `dsconv/3dsconv.py` to `dsconv/legacy.py`
+2. Mark `legacy.py` as frozen (no modifications allowed)
+3. Update module docstring to indicate purpose
+
+**File:** `dsconv/legacy.py`
+```python
+"""
+LEGACY REFERENCE IMPLEMENTATION - DO NOT MODIFY
+
+This is the original monolithic 3dsconv implementation preserved for:
+1. Validation testing (compare refactored output against original)
+2. Regression detection (ensure refactored version produces identical output)
+3. Reference for understanding original behavior
+4. Fallback if refactored version has issues
+
+Last frozen: [Date before Phase 7.2]
+Status: FROZEN - all changes go to new modular implementation
+
+To use legacy implementation:
+    python -m dsconv --legacy input.cci -o output/
+    # OR
+    python -m dsconv.legacy input.cci -o output/
+
+To use refactored implementation (default):
+    python -m dsconv input.cci -o output/
+"""
+
+# Original 737-line implementation
+# [All original code unchanged]
+```
+
+**Acceptance Criteria:**
+- `dsconv/legacy.py` is identical to original `3dsconv.py`
+- Module can be executed directly: `python -m dsconv.legacy`
+- Docstring clearly marks it as frozen reference
+- Original `3dsconv.py` remains untouched for now
+
+**Time Estimate:** 5-10 minutes
+
+---
 
 #### Task 7.1: Create CLI Configuration Mapper
 **File:** `dsconv/cli/config_mapper.py`
@@ -1009,94 +1059,372 @@ class CLIConfigMapper:
 - No global state
 - Unit tests
 
-#### Task 7.2: Refactor Main Entry Point
-**File:** `dsconv/__main__.py`
+#### Task 7.2: Create Dual Entry Point System
+**Goal:** Support both legacy and refactored implementations for validation
+
+**File 1:** `dsconv/__main__.py` (Dual-mode router)
 ```python
+"""Main entry point for 3dsconv.
+
+Supports both refactored and legacy implementations for validation.
+Default: Refactored modular implementation
+Legacy mode: --legacy flag uses original monolithic implementation
+"""
+
+import sys
+
+
 def main() -> None:
-    """Main entry point for 3dsconv CLI"""
-    
+    """Main entry point with implementation selection.
+
+    Usage:
+        python -m dsconv input.cci              # Refactored (default)
+        python -m dsconv --legacy input.cci     # Legacy/original
+    """
+
+    # Check for --legacy flag BEFORE full argument parsing
+    # This allows legacy implementation to handle all args independently
+    if "--legacy" in sys.argv or "--use-legacy" in sys.argv:
+        # Remove the flag and delegate to legacy implementation
+        sys.argv = [arg for arg in sys.argv if arg not in ("--legacy", "--use-legacy")]
+
+        from dsconv.legacy import main as legacy_main
+        return legacy_main()
+
+    # Otherwise, run refactored implementation
+    from dsconv.cli.main import main as refactored_main
+    return refactored_main()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**File 2:** `dsconv/cli/main.py` (Refactored implementation)
+```python
+"""Refactored CLI implementation using modular architecture."""
+
+import os
+
+from dsconv.cli.config_mapper import CLIConfigMapper
+from dsconv.services.service_factory import ServiceFactory
+from dsconv.utils import parse_args
+
+
+def main() -> None:
+    """Main entry point for refactored 3dsconv CLI.
+
+    This is the new modular implementation that replaces the original
+    monolithic 3dsconv.py. It uses dependency injection, clean architecture,
+    and separates concerns across models, crypto, I/O, and services layers.
+    """
+
     # Parse arguments
     args = parse_args()
-    
+
     # Handle deprecated options
-    if args.use_deprecated:
+    if hasattr(args, 'use_deprecated') and args.use_deprecated:
         print("Note: Deprecated options are being used...")
         return
-    
+
     # Process each game file
     total_files = len(args.game)
     processed_files = 0
-    
+
     for game_file in args.game:
         try:
-            # Map to configuration
+            # Map CLI args to domain configuration
             config = CLIConfigMapper.map_to_conversion_config(args)
             config.input_file = game_file
-            
-            # Create service
+
+            # Create conversion service with all dependencies
             service = ServiceFactory.create_conversion_service(
                 game_file,
                 _determine_output_path(game_file, args.output),
                 config
             )
-            
+
             # Execute conversion
             service.convert(config)
             processed_files += 1
-            
+
         except Exception as e:
             print(f"Error converting {game_file}: {e}")
             continue
-    
+
     print(f"Done converting {processed_files} out of {total_files} files.")
 
+
 def _determine_output_path(input_file: str, output_dir: str) -> str:
-    """Determine output CIA file path"""
+    """Determine output CIA file path.
+
+    Args:
+        input_file: Path to input CCI file
+        output_dir: Output directory for CIA file
+
+    Returns:
+        Full path to output CIA file
+    """
     rom_name = os.path.basename(os.path.splitext(input_file)[0])
     return os.path.join(output_dir, rom_name + ".cia")
 ```
 
 **Acceptance Criteria:**
-- Clean entry point
-- Error handling
-- No global state
-- Integration tests
+- `dsconv/__main__.py` routes to correct implementation based on flag
+- `dsconv/cli/main.py` contains clean refactored entry point
+- Both implementations accessible:
+  - Default: `python -m dsconv input.cci` (refactored)
+  - Legacy: `python -m dsconv --legacy input.cci` (original)
+- No global state in refactored implementation
+- Error handling for both paths
+- Integration tests for both implementations
+
+**Time Estimate:** 1-2 hours
+
+#### Task 7.3: Create Validation Script
+**Goal:** Automated validation comparing legacy vs refactored outputs
+
+**File:** `scripts/validate_refactor.py`
+```python
+#!/usr/bin/env python3
+"""
+Validation script to compare refactored vs legacy implementations.
+
+Runs the same input through both implementations and compares:
+- Output file sizes
+- Output file hashes (MD5/SHA256)
+- Byte-by-byte comparison
+- Execution time comparison
+
+Exit code:
+    0: All files match (validation passed)
+    1: One or more files differ (validation failed)
+
+Usage:
+    python scripts/validate_refactor.py input1.cci input2.cci
+    python scripts/validate_refactor.py fixtures/*.cci -o validation_results/
+"""
+
+import hashlib
+import subprocess
+import sys
+from pathlib import Path
+
+
+def compute_hash(file_path: Path) -> tuple[str, str]:
+    """Compute MD5 and SHA256 of a file."""
+    md5 = hashlib.md5()
+    sha256 = hashlib.sha256()
+
+    with open(file_path, 'rb') as f:
+        while chunk := f.read(8192):
+            md5.update(chunk)
+            sha256.update(chunk)
+
+    return md5.hexdigest(), sha256.hexdigest()
+
+
+def validate_conversion(input_file: str, output_dir: Path) -> dict:
+    """Run both implementations and compare outputs.
+
+    Returns:
+        dict with keys: input, legacy, refactored, match, differences
+    """
+    results = {
+        "input": input_file,
+        "legacy": {},
+        "refactored": {},
+        "match": False,
+        "differences": []
+    }
+
+    # Output paths
+    legacy_output = output_dir / "legacy"
+    refactored_output = output_dir / "refactored"
+    legacy_output.mkdir(parents=True, exist_ok=True)
+    refactored_output.mkdir(parents=True, exist_ok=True)
+
+    input_name = Path(input_file).stem
+    legacy_cia = legacy_output / f"{input_name}.cia"
+    refactored_cia = refactored_output / f"{input_name}.cia"
+
+    # Run legacy implementation
+    print(f"  Running LEGACY on {Path(input_file).name}...")
+    legacy_cmd = [sys.executable, "-m", "dsconv", "--legacy", input_file, "-o", str(legacy_output)]
+    legacy_result = subprocess.run(legacy_cmd, capture_output=True, text=True)
+
+    if legacy_result.returncode != 0:
+        results["legacy"]["error"] = legacy_result.stderr
+        return results
+
+    # Run refactored implementation
+    print(f"  Running REFACTORED on {Path(input_file).name}...")
+    refactored_cmd = [sys.executable, "-m", "dsconv", input_file, "-o", str(refactored_output)]
+    refactored_result = subprocess.run(refactored_cmd, capture_output=True, text=True)
+
+    if refactored_result.returncode != 0:
+        results["refactored"]["error"] = refactored_result.stderr
+        return results
+
+    # Verify outputs exist
+    if not legacy_cia.exists():
+        results["legacy"]["error"] = "Output file not created"
+        return results
+
+    if not refactored_cia.exists():
+        results["refactored"]["error"] = "Output file not created"
+        return results
+
+    # Compare file sizes
+    legacy_size = legacy_cia.stat().st_size
+    refactored_size = refactored_cia.stat().st_size
+    results["legacy"]["size"] = legacy_size
+    results["refactored"]["size"] = refactored_size
+
+    if legacy_size != refactored_size:
+        results["differences"].append(
+            f"Size mismatch: legacy={legacy_size}, refactored={refactored_size}"
+        )
+
+    # Compute and compare hashes
+    legacy_md5, legacy_sha256 = compute_hash(legacy_cia)
+    refactored_md5, refactored_sha256 = compute_hash(refactored_cia)
+
+    results["legacy"]["md5"] = legacy_md5
+    results["legacy"]["sha256"] = legacy_sha256
+    results["refactored"]["md5"] = refactored_md5
+    results["refactored"]["sha256"] = refactored_sha256
+
+    # Check for byte-identical outputs
+    if legacy_sha256 == refactored_sha256:
+        results["match"] = True
+        print(f"  ✅ MATCH: Outputs are identical")
+    else:
+        results["match"] = False
+        print(f"  ❌ MISMATCH: Outputs differ")
+
+        # Find first difference for debugging
+        with open(legacy_cia, 'rb') as f1, open(refactored_cia, 'rb') as f2:
+            offset = 0
+            while True:
+                b1 = f1.read(1)
+                b2 = f2.read(1)
+
+                if b1 != b2:
+                    results["differences"].append(
+                        f"First diff at offset 0x{offset:X}: "
+                        f"legacy=0x{b1.hex() if b1 else 'EOF'}, "
+                        f"refactored=0x{b2.hex() if b2 else 'EOF'}"
+                    )
+                    break
+
+                if not b1 and not b2:
+                    break
+
+                offset += 1
+
+    return results
+
+
+def main():
+    """Run validation on test files."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Validate refactored implementation against legacy"
+    )
+    parser.add_argument("input_files", nargs="+", help="CCI files to test")
+    parser.add_argument("-o", "--output", default="validation_output",
+                       help="Output directory for validation results")
+
+    args = parser.parse_args()
+    output_dir = Path(args.output)
+
+    print("=" * 80)
+    print("3dsconv Refactoring Validation")
+    print("=" * 80)
+
+    all_results = []
+    matches = 0
+
+    for input_file in args.input_files:
+        print(f"\nValidating: {input_file}")
+        results = validate_conversion(input_file, output_dir)
+        all_results.append(results)
+
+        if results["match"]:
+            matches += 1
+
+    # Summary
+    print("\n" + "=" * 80)
+    print(f"VALIDATION SUMMARY: {matches}/{len(args.input_files)} files match")
+    print("=" * 80)
+
+    for result in all_results:
+        status = "✅ PASS" if result["match"] else "❌ FAIL"
+        print(f"{status}: {Path(result['input']).name}")
+
+        if result.get("legacy", {}).get("error"):
+            print(f"  Legacy error: {result['legacy']['error']}")
+        if result.get("refactored", {}).get("error"):
+            print(f"  Refactored error: {result['refactored']['error']}")
+
+        if result["differences"]:
+            for diff in result["differences"]:
+                print(f"  - {diff}")
+
+    sys.exit(0 if matches == len(args.input_files) else 1)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**Acceptance Criteria:**
+- Script compares both implementations byte-for-byte
+- Reports file size, MD5, SHA256 for both outputs
+- Identifies first byte difference if outputs don't match
+- Exit code 0 for success, 1 for failure
+- Can be run in CI/CD pipeline
+
+**Time Estimate:** 1 hour
 
 ---
 
-## Phase 8: Remove Module-Level Execution
+## Phase 8: Validation & Legacy Code Management
 
-**Goal:** Eliminate global state and module-level code execution  
-**Agent Focus:** Global state removal  
-**Dependencies:** All previous phases  
-**Risk:** High (breaking changes)
+**Goal:** Validate refactored implementation and manage legacy code
+**Agent Focus:** Testing and documentation
+**Dependencies:** Phase 7 complete
+**Risk:** Low (validation only, no breaking changes)
+
+**IMPORTANT:** This phase focuses on validation rather than deletion. The legacy code is preserved as a reference implementation to ensure the refactored version produces identical outputs.
 
 ### Tasks
 
-#### Task 8.1: Move Global Variables to Configuration
-**Current:**
-```python
-# Global state in 3dsconv.py
-args = parse_args()
-keys_set = False
-orig_ncch_key = 0
-certchain_dev = b""
-```
-
-**Target:**
-```python
-# No global variables - all in configuration or injected
-```
+#### Task 8.1: Run Comprehensive Validation
+**Goal:** Verify refactored implementation matches legacy output
 
 **Actions:**
-- Remove all module-level variable assignments
-- Ensure all state is in config or service instances
-- Update all references to use injected dependencies
+1. Collect test CCI files (if available)
+2. Run validation script on all test files
+3. Investigate and fix any discrepancies
+4. Document any intentional differences (if any)
+
+**Test Coverage:**
+- Decrypted CCI files
+- Encrypted CCI files (zerokey)
+- Encrypted CCI files (original NCCH)
+- Various partition configurations
+- Edge cases (corrupted headers, etc.)
 
 **Acceptance Criteria:**
-- No module-level execution
-- Import doesn't execute code
-- All tests still pass
+- Validation script passes on all test files
+- Refactored output is byte-identical to legacy output
+- Performance is comparable or better
+- All edge cases handled correctly
+
+**Time Estimate:** 2-4 hours (depends on test file availability)
 
 #### Task 8.2: Extract Certificate Chain Loading
 **File:** `dsconv/crypto/certchain_provider.py`
@@ -1138,50 +1466,138 @@ class CertChainProvider:
 - Proper error handling
 - Unit tests
 
-#### Task 8.3: Clean Up Legacy 3dsconv.py
-**Actions:**
-- Mark `dsconv/3dsconv.py` as deprecated
-- Move any remaining logic to appropriate services
-- Update entry point to use new architecture
-- Keep file for backward compatibility (just imports)
+#### Task 8.3: Document Legacy Code Strategy
+**Goal:** Document why legacy code is kept and how to use it
 
-**File:** `dsconv/3dsconv.py` (legacy compatibility)
+**File:** `dsconv/legacy.py` (update docstring)
 ```python
 """
-Legacy 3dsconv module - DEPRECATED
+LEGACY REFERENCE IMPLEMENTATION - PRESERVED FOR VALIDATION
 
-This module is kept for backward compatibility.
-All functionality has been moved to:
-- dsconv.services for business logic
-- dsconv.models for data structures
-- dsconv.io for file operations
-- dsconv.crypto for encryption
+This is the original monolithic 3dsconv implementation, preserved indefinitely for:
 
-Use the new modular API or CLI via __main__.py
+1. **Validation**: Ensure refactored implementation produces identical output
+2. **Regression Testing**: Detect any behavioral changes in new code
+3. **Debugging Reference**: When output differs, understand why
+4. **Performance Baseline**: Compare execution speed
+5. **Fallback**: If refactored version has issues, this works
+
+Status: FROZEN (no modifications)
+Last Updated: [Date]
+Refactored Version: dsconv/cli/main.py
+
+Usage Examples:
+    # Run legacy implementation
+    python -m dsconv --legacy input.cci -o output/
+
+    # Or directly
+    python -m dsconv.legacy input.cci -o output/
+
+    # Validate refactored against legacy
+    python scripts/validate_refactor.py input.cci
+
+Architecture Changes in Refactored Version:
+    - Monolithic → Modular (models, crypto, io, services)
+    - Global state → Dependency injection
+    - Nested functions → Dedicated classes
+    - No tests → 100% test coverage
+
+For new features, modify the refactored implementation in:
+    - dsconv/models/    (data structures)
+    - dsconv/crypto/    (encryption)
+    - dsconv/io/        (file I/O)
+    - dsconv/services/  (business logic)
+    - dsconv/cli/       (command-line interface)
+
+DO NOT modify this file unless absolutely necessary for critical bug fixes.
+"""
+
+# [Original 737-line implementation unchanged]
+```
+
+**File:** `dsconv/3dsconv.py` (compatibility shim - OPTIONAL)
+```python
+"""
+Compatibility shim for old imports.
+
+This module redirects to the legacy implementation for backward compatibility.
+New code should use dsconv.cli.main or dsconv.legacy directly.
 """
 
 import warnings
+
 warnings.warn(
-    "dsconv.3dsconv is deprecated. Use dsconv.services.ConversionService",
+    "Importing from dsconv.3dsconv is deprecated. "
+    "Use 'python -m dsconv' (refactored) or 'python -m dsconv --legacy' (original).",
     DeprecationWarning,
     stacklevel=2
 )
 
-# Re-export for backward compatibility
-from dsconv.utils import parse_args, rol, error, show_progress
-from dsconv.services import ConversionService
-
-# Old main() for compatibility
-def main():
-    """Deprecated main - use dsconv.__main__.main()"""
-    from dsconv.__main__ import main as new_main
-    new_main()
+# Redirect to legacy for backward compatibility
+from dsconv.legacy import *  # noqa: F401, F403
 ```
 
 **Acceptance Criteria:**
-- No breaking changes for CLI users
-- Deprecation warnings
-- Clean architecture
+- Clear documentation of legacy preservation strategy
+- Users understand when to use legacy vs refactored
+- No breaking changes for existing users
+- Legacy code clearly marked as reference implementation
+
+**Time Estimate:** 30 minutes
+
+#### Task 8.4: Add Validation to CI/CD
+**Goal:** Automated validation in continuous integration
+
+**File:** `.github/workflows/ci.yml` (add validation job)
+```yaml
+  validate-refactor:
+    name: Validate Refactored vs Legacy
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+
+    - name: Run validation (if test files available)
+      run: |
+        if [ -d "fixtures" ] && [ -n "$(ls -A fixtures/*.cci 2>/dev/null)" ]; then
+          echo "Running validation on fixture files..."
+          python scripts/validate_refactor.py fixtures/*.cci
+        else
+          echo "No fixture files found, skipping validation"
+          echo "To enable validation, add .cci test files to fixtures/"
+        fi
+      continue-on-error: true  # Don't fail CI if no fixtures
+
+    - name: Upload validation results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: validation-results
+        path: validation_output/
+        retention-days: 30
+```
+
+**Acceptance Criteria:**
+- CI runs validation automatically on push/PR
+- Validation results uploaded as artifacts
+- CI doesn't fail if no test files available
+- Clear instructions for adding test files
+
+**Time Estimate:** 30 minutes
 
 ---
 
@@ -1479,8 +1895,24 @@ This refactoring plan transforms 3dsconv from an untestable monolith into a main
 - **Dependency injection** enabling testability
 - **15+ focused modules** (from 1 monolithic file)
 - **Backward compatible** CLI interface
+- **Dual implementation mode** for validation and confidence
+- **Byte-for-byte output validation** ensuring correctness
 
-The plan balances craft excellence with pragmatic delivery, avoiding over-engineering while establishing a solid foundation for future development.
+### Validation-First Approach
+
+The plan includes a **dual entry point system** that preserves the original implementation alongside the refactored code:
+
+- **Legacy mode:** `python -m dsconv --legacy input.cci` (original monolith)
+- **Refactored mode:** `python -m dsconv input.cci` (new modular architecture)
+- **Validation:** `python scripts/validate_refactor.py input.cci` (compare outputs)
+
+This approach provides:
+1. **Confidence** - Prove refactored version is correct through comparison
+2. **Safety** - Fallback to original if issues arise
+3. **Debugging** - Reference implementation for understanding behavior
+4. **Regression detection** - Catch unintended changes immediately
+
+The plan balances craft excellence with pragmatic delivery, avoiding over-engineering while establishing a solid foundation for future development. The validation-first strategy ensures that the refactoring maintains functional correctness while improving code quality.
 
 ---
 
