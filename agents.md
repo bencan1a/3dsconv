@@ -17,6 +17,28 @@
 │   ├── 3dsconv.py          # Main conversion script (676 lines)
 │   ├── __main__.py         # Entry point for CLI and module execution
 │   └── __init__.py         # Package initialization
+├── tests/                   # Test suite
+│   ├── unit/               # Unit tests (52+ tests)
+│   ├── integration/        # Integration tests
+│   ├── e2e/                # End-to-end tests (planned)
+│   ├── fixtures/           # Test data files
+│   └── conftest.py         # Shared pytest fixtures
+├── examples/                # Example and test files
+│   ├── test-ccis/          # Test CCI/CIA files for conversion testing
+│   │   ├── README.md       # Detailed documentation of test files
+│   │   ├── test-01-nocrypt.{cci,cia}        # No encryption
+│   │   ├── test-02-ncch-original.{cci,cia}  # NCCH slot 0x2C
+│   │   ├── test-03-ncch-7x.{cci,cia}        # NCCH slot 0x25
+│   │   ├── test-04-fixed-key.{cci,cia}      # Fixed key encryption
+│   │   ├── test-05-compressed.{cci,cia}     # LZ77 compressed ExeFS
+│   │   └── test-06-new3ds.{cci,cia}         # New3DS optimized
+│   └── rsf templates/      # RSF template files for test file generation
+│       ├── basic-nocrypt.rsf
+│       ├── basic-ncch-original.rsf
+│       ├── basic-ncch-7x.rsf
+│       ├── basic-fixed-key.rsf
+│       ├── basic-compressed.rsf
+│       └── basic-new3ds.rsf
 ├── context_portal/         # Context management system for AI agents
 │   ├── alembic/           # Database migrations
 │   │   ├── versions/
@@ -277,10 +299,20 @@ The script uses some module-level global variables:
 4. **Type hints**: Could be added for better IDE support (some exist in `parse_args`)
 
 ### Testing Considerations
-- **No automated tests currently exist** in the repository
-- Test files (ROMs) are ignored by git (see [.gitignore](.gitignore))
-- Manual testing requires real CCI/3DS files
-- Test with: decrypted, encrypted, zerokey files
+- **Automated tests**: The repository includes a comprehensive pytest test suite in `tests/`
+  - Unit tests: 52+ tests with 100% coverage on utils.py
+  - Integration tests: Format validation, encryption, hash verification
+  - End-to-end tests: Full conversion workflows (planned)
+- **Test CCI/CIA files**: Available in `examples/test-ccis/`
+  - 6 test CCI files + 6 matching canonical CIA files
+  - Cover all encryption scenarios: no encryption, NCCH original (0x2C), NCCH 7.x (0x25), fixed key, compressed ExeFS, New3DS
+  - Small size (~93KB each) for fast testing
+  - Detailed documentation in [examples/test-ccis/README.md](examples/test-ccis/README.md)
+- **RSF templates**: Available in `examples/rsf templates/`
+  - 6 RSF files corresponding to each test scenario
+  - Used to regenerate test files with makerom if needed
+  - Files: basic-nocrypt.rsf, basic-ncch-original.rsf, basic-ncch-7x.rsf, basic-fixed-key.rsf, basic-compressed.rsf, basic-new3ds.rsf
+- Manual testing with user-provided files (ROMs) should also be performed
 - Test with: games with/without manual, with/without DLP child
 
 ## Important Notes for AI Agents
