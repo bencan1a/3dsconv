@@ -6,7 +6,6 @@ reading NCCH headers, extended headers with optional decryption, and
 encryption key extraction.
 """
 
-
 from dsconv.crypto.decryption_service import DecryptionService
 from dsconv.io.binary_reader import BinaryReader
 from dsconv.models.ncch import NCCHHeader
