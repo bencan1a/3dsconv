@@ -5,6 +5,7 @@ for Nintendo 3DS content conversion.
 """
 
 from .aes_adapter import IAESCipher, MockAESAdapter, PyAESAdapter
+from .certchain_provider import CertChainProvider
 from .decryption_service import DecryptionService
 from .key_derivation import KeyDerivationService
 from .key_provider import (
@@ -26,6 +27,8 @@ __all__ = [
     "KeyDerivationService",
     # Decryption service
     "DecryptionService",
+    # Certificate chain provider
+    "CertChainProvider",
     # Key providers
     "IKeyProvider",
     "ProdKeysKeyProvider",
