@@ -7,4 +7,4 @@ and other cryptographic utilities needed for CCI to CIA conversion.
 
 from .key_derivation import KeyDerivationService
 
-__all__ = ['KeyDerivationService']
+__all__ = ["KeyDerivationService"]
