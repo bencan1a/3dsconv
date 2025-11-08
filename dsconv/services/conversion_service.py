@@ -478,13 +478,21 @@ class ConversionService:
         self.cia_writer.writer.file.seek(0x2F5A)
         self.cia_writer.writer.file.write(save_size)
 
+        # Align content to 256-byte boundary
+        # The content must start at a 256-byte aligned offset
+        self.cia_writer.writer.file.seek(0, 2)  # Seek to end to get current position
+        current_pos = self.cia_writer.writer.file.tell()
+        aligned_pos = ((current_pos + 255) // 256) * 256
+        padding_needed = aligned_pos - current_pos
+        if padding_needed > 0:
+            self.cia_writer.writer.file.write(bytes(padding_needed))
+
         # Write game CXI content
         # Start with NCCH header + first-half ExtHeader
         # Read the raw NCCH header bytes from source
         game_cxi_offset = game_partition.offset * 0x200
         ncch_header_bytes = self.ncch_reader.reader.read_at(game_cxi_offset, 0x200)
         
-        self.cia_writer.writer.file.seek(0, 2)  # Seek to end
         game_cxi_hash = hashlib.sha256(ncch_header_bytes + extheader)
         self.cia_writer.writer.file.write(ncch_header_bytes + extheader)
 
@@ -529,16 +537,20 @@ class ConversionService:
         self.cia_writer.writer.file.write(info_records_hash.digest())
         
         # Write Meta region
-        # Meta region structure: dependency_list (0x180 bytes) + flags (4 bytes) + padding (0xFC bytes) + icon
-        dependency_list = extheader[0x200:0x380]  # Dependency list from extheader
+        # Meta region structure: dependency_list (0x180 bytes) + padding (0x180) + flags (4 bytes) + padding (0xFC bytes) + icon
+        # Dependency list is from extheader offset 0x40-0x1C0 (NOT 0x200-0x380!)
+        dependency_list = extheader[0x40:0x1C0]  # Dependency list from extheader
         self.cia_writer.writer.file.seek(0, 2)  # Seek to end
         self.cia_writer.writer.file.write(
             dependency_list + bytes(0x180) + struct.pack("<I", 0x2) + bytes(0xFC) + icon
         )
         
-        # Pad to 64-byte alignment
+        # Pad to 256-byte alignment, then add one more 256-byte block
+        # This matches the legacy implementation's file size
         current_pos = self.cia_writer.writer.file.tell()
-        aligned_pos = ((current_pos + 63) // 64) * 64
+        aligned_pos = ((current_pos + 255) // 256) * 256
+        # Add 256 bytes to match legacy (legacy adds an extra alignment block)
+        aligned_pos += 256
         if aligned_pos > current_pos:
             self.cia_writer.writer.file.write(bytes(aligned_pos - current_pos))
 
