@@ -77,7 +77,7 @@ class NCSDContainer:
         if len(self.magic) != 4:
             raise ValueError("magic must be 4 bytes")
         if self.magic != b"NCSD":
-            raise ValueError(f"Invalid NCSD magic: {self.magic}")
+            raise ValueError(f"Invalid NCSD magic: {self.magic!r}")
         if len(self.title_id) != 8:
             raise ValueError("title_id must be 8 bytes")
         if len(self.partitions) > 8:
