@@ -1,12 +1,12 @@
 """Tests for ConversionService orchestration."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
 from dsconv.crypto.decryption_service import DecryptionService
 from dsconv.io.cia_writer import CIAWriter
-from dsconv.io.exefs_reader import ExeFSFile, ExeFSReader
+from dsconv.io.exefs_reader import ExeFSReader
 from dsconv.io.ncch_reader import NCCHReader
 from dsconv.io.ncsd_reader import NCSDReader
 from dsconv.models.encryption import EncryptionContext, EncryptionType
@@ -263,9 +263,7 @@ class TestDetermineEncryption:
         with pytest.raises(ValueError, match="ROM is encrypted but no decryption service"):
             service._determine_encryption(encrypted_header, bytes(8), config, 0)
 
-    def test_original_ncch_encryption_returns_correct_type(
-        self, service, encrypted_header, config
-    ):
+    def test_original_ncch_encryption_returns_correct_type(self, service, encrypted_header, config):
         """Test that original NCCH encryption is identified correctly."""
         title_id = bytes(8)
         ctx = service._determine_encryption(encrypted_header, title_id, config, 0)
@@ -429,7 +427,7 @@ class TestExtractIconEncrypted:
         service.ncch_reader.reader.read_at.side_effect = [encrypted_header, icon_data]
 
         key_y = bytes(16)
-        icon = service._extract_icon(0x4000, ncch_header, encrypted_ctx, key_y)
+        service._extract_icon(0x4000, ncch_header, encrypted_ctx, key_y)
 
         # Verify decryption was called for header and icon
         assert service.decryption_service.decrypt_exefs.call_count == 2
@@ -489,9 +487,7 @@ class TestConvertWithEncryptedContent:
     @pytest.fixture
     def config(self):
         """Create basic config."""
-        return ConversionConfig(
-            input_file="test.cci", output_file="test.cia", key_provider=None
-        )
+        return ConversionConfig(input_file="test.cci", output_file="test.cia", key_provider=None)
 
     @pytest.fixture
     def mock_container(self):
@@ -781,7 +777,7 @@ class TestExtractIcon:
         icon_data = b"I" * 0x36C0
         service.ncch_reader.reader.read_at.side_effect = [bytes(header_data), icon_data]
 
-        icon = service._extract_icon(game_cxi_offset, ncch_header, decrypted_ctx, None)
+        service._extract_icon(game_cxi_offset, ncch_header, decrypted_ctx, None)
 
         # Verify that header was read at correct offset
         calls = service.ncch_reader.reader.read_at.call_args_list
@@ -838,9 +834,7 @@ class TestConvert:
     @pytest.fixture
     def config(self):
         """Create basic config."""
-        return ConversionConfig(
-            input_file="test.cci", output_file="test.cia", key_provider=None
-        )
+        return ConversionConfig(input_file="test.cci", output_file="test.cia", key_provider=None)
 
     @pytest.fixture
     def mock_container(self):
