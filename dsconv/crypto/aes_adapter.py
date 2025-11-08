@@ -81,9 +81,7 @@ class PyAESAdapter(IAESCipher):
 
             self._pyaes = pyaes
         except ImportError as e:
-            raise ImportError(
-                "pyaes library not found. Install with: pip install pyaes"
-            ) from e
+            raise ImportError("pyaes library not found. Install with: pip install pyaes") from e
 
         self.key = key
         self.counter_value = counter_value

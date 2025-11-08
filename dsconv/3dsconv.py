@@ -2,22 +2,18 @@
 """
 Compatibility shim for old imports.
 
-This module redirects to the refactored implementation for backward compatibility.
-The original monolithic code has been moved to dsconv/legacy.py.
-
-New code should use:
-    python -m dsconv (refactored)
-or
-    python -m dsconv --legacy (original)
+This module redirects to the legacy implementation for backward compatibility.
+New code should use dsconv.cli.main or dsconv.legacy directly.
 """
 
-# Import necessary functions from refactored implementation  
-from dsconv.utils import parse_args  # noqa: F401
+import warnings
 
-# Don't import legacy here as it runs module-level code
-# from dsconv import legacy  # noqa: F401
+warnings.warn(
+    "Importing from dsconv.3dsconv is deprecated. "
+    "Use 'python -m dsconv' (refactored) or 'python -m dsconv --legacy' (original).",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-def main():
-    """Compatibility main - delegates to refactored CLI."""
-    from dsconv.cli.main import main as refactored_main
-    refactored_main()
+# Redirect to legacy for backward compatibility
+from dsconv.legacy import *  # noqa: F401, F403, E402

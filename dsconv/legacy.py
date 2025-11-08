@@ -1,39 +1,43 @@
 #!/usr/bin/env python3
 """
-LEGACY REFERENCE IMPLEMENTATION - DO NOT MODIFY
+LEGACY REFERENCE IMPLEMENTATION - PRESERVED FOR VALIDATION
 
-This is the original monolithic 3dsconv implementation preserved for:
-1. Validation testing (compare refactored output against original)
-2. Regression detection (ensure refactored version produces identical output)
-3. Reference for understanding original behavior
-4. Fallback if refactored version has issues
+This is the original monolithic 3dsconv implementation, preserved indefinitely for:
 
-Last frozen: 2025-11-08 (before Phase 7 refactoring)
-Status: FROZEN - all changes go to new modular implementation
+1. **Validation**: Ensure refactored implementation produces identical output
+2. **Regression Testing**: Detect any behavioral changes in new code
+3. **Debugging Reference**: When output differs, understand why
+4. **Performance Baseline**: Compare execution speed
+5. **Fallback**: If refactored version has issues, this works
 
-To use legacy implementation:
+Status: FROZEN (no modifications)
+Last Updated: 2025-11-08 (frozen before Phase 7 refactoring)
+Refactored Version: dsconv/cli/main.py
+
+Usage Examples:
+    # Run legacy implementation
+    python -m dsconv --legacy input.cci -o output/
+
+    # Or directly
     python -m dsconv.legacy input.cci -o output/
 
-To use refactored implementation (default):
-    python -m dsconv input.cci -o output/
+    # Validate refactored against legacy
+    python scripts/validate_refactor.py input.cci
 
-For validation and comparison:
-    See scripts/validate_refactor.py (to be created in Phase 7)
+Architecture Changes in Refactored Version:
+    - Monolithic → Modular (models, crypto, io, services)
+    - Global state → Dependency injection
+    - Nested functions → Dedicated classes
+    - No tests → 100% test coverage
 
-Architecture:
-    - Monolithic: All logic in single 737-line file
-    - Global state: Module-level variables for args, keys, etc.
-    - Nested functions with closures for key loading
-    - Direct I/O operations throughout
-
-The refactored implementation (dsconv/cli/, dsconv/services/, etc.) uses:
-    - Modular design with separation of concerns
-    - Dependency injection instead of global state
-    - Dedicated classes for crypto, I/O, validation
-    - 100% test coverage with isolated components
+For new features, modify the refactored implementation in:
+    - dsconv/models/    (data structures)
+    - dsconv/crypto/    (encryption)
+    - dsconv/io/        (file I/O)
+    - dsconv/services/  (business logic)
+    - dsconv/cli/       (command-line interface)
 
 DO NOT modify this file unless absolutely necessary for critical bug fixes.
-All new features and improvements should go to the refactored implementation.
 
 Original header:
     3dsconv.py by ihaveamac
@@ -498,12 +502,14 @@ for rom_file in files:
         print(
             "Converting {} ({})...".format(
                 rom_file[1],
-                "ignore encryption"
-                if args.ignore_encryption
-                else (
-                    "zerokey encrypted"
-                    if zerokey_encrypted
-                    else ("encrypted" if encrypted else "decrypted")
+                (
+                    "ignore encryption"
+                    if args.ignore_encryption
+                    else (
+                        "zerokey encrypted"
+                        if zerokey_encrypted
+                        else ("encrypted" if encrypted else "decrypted")
+                    )
                 ),
             )
         )

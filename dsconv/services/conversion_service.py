@@ -420,8 +420,12 @@ class ConversionService:
 
         # Build CIA header structure (0x2020 bytes total)
         header = (
-            struct.pack("<IHHII", 0x2020, 0, 0, 0xA00, 0x350)  # Header size, type, version, cert chain size, ticket size
-            + struct.pack("<III", tmd_size, 0x3AC0, content_size)  # TMD size, meta size, content size
+            struct.pack(
+                "<IHHII", 0x2020, 0, 0, 0xA00, 0x350
+            )  # Header size, type, version, cert chain size, ticket size
+            + struct.pack(
+                "<III", tmd_size, 0x3AC0, content_size
+            )  # TMD size, meta size, content size
             + struct.pack("<IB", 0, content_index)  # Reserved + content index
             + bytes(0x201F)  # Padding to 0x2020 bytes
         )
@@ -492,50 +496,50 @@ class ConversionService:
         # Read the raw NCCH header bytes from source
         game_cxi_offset = game_partition.offset * 0x200
         ncch_header_bytes = self.ncch_reader.reader.read_at(game_cxi_offset, 0x200)
-        
+
         game_cxi_hash = hashlib.sha256(ncch_header_bytes + extheader)
         self.cia_writer.writer.file.write(ncch_header_bytes + extheader)
 
         # Write rest of game CXI content
         self.progress_reporter.report_stage("Writing Game Executable CXI")
         self.ncch_reader.reader.file.seek(game_cxi_offset + 0x200 + 0x400)
-        
+
         left = game_cxi_size - 0x200 - 0x400
         read_size = 0x800000  # 8MB chunks, same as legacy
-        
+
         for _ in itertools.repeat(0, int(math.floor(game_cxi_size / read_size) + 1)):
             to_read = min(read_size, left)
             tmpread = self.ncch_reader.reader.file.read(to_read)
             game_cxi_hash.update(tmpread)
             self.cia_writer.writer.file.write(tmpread)
             left -= read_size
-            
+
             # Report progress
             self.progress_reporter.report_progress(game_cxi_size - left, game_cxi_size)
-            
+
             if left <= 0:
                 break
 
         # Update TMD with game CXI hash
         self.cia_writer.writer.file.seek(0x38D4)
         self.cia_writer.writer.file.write(game_cxi_hash.digest())
-        
+
         # Update chunk records with the game CXI hash
         chunk_records[0x10:0x30] = game_cxi_hash.digest()
-        
+
         # Calculate and write final hashes
         # Chunk records hash
         chunk_records_hash = hashlib.sha256(bytes(chunk_records))
         self.cia_writer.writer.file.seek(0x2FC7)
         self.cia_writer.writer.file.write(bytes([content_count]) + chunk_records_hash.digest())
-        
+
         # Info records hash
         info_records_hash = hashlib.sha256(
             bytes(3) + bytes([content_count]) + chunk_records_hash.digest() + bytes(0x8DC)
         )
         self.cia_writer.writer.file.seek(0x2FA4)
         self.cia_writer.writer.file.write(info_records_hash.digest())
-        
+
         # Write Meta region
         # Meta region structure: dependency_list (0x180 bytes) + padding (0x180) + flags (4 bytes) + padding (0xFC bytes) + icon
         # Dependency list is from extheader offset 0x40-0x1C0 (NOT 0x200-0x380!)
@@ -544,7 +548,7 @@ class ConversionService:
         self.cia_writer.writer.file.write(
             dependency_list + bytes(0x180) + struct.pack("<I", 0x2) + bytes(0xFC) + icon
         )
-        
+
         # Pad to 256-byte alignment, then add one more 256-byte block
         # This matches the legacy implementation's file size
         current_pos = self.cia_writer.writer.file.tell()

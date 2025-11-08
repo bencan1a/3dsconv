@@ -9,6 +9,7 @@
 
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute to the project
 - **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Development workflow guide
+- **[docs/LEGACY_CODE_STRATEGY.md](docs/LEGACY_CODE_STRATEGY.md)** - Understanding legacy vs refactored implementations
 - **[agents.md](agents.md)** - Complete project context for AI assistants
 - **[.github/copilot-instructions.md](.github/copilot-instructions.md)** - GitHub Copilot guidance
 - **[Test-Automation-Plan.md](Test-Automation-Plan.md)** - Testing strategy
@@ -32,8 +33,14 @@ On Windows, CCIs can be dragged on top of `3dsconv.exe`. See [Encryption](#encry
 3dsconv can be used as a standalone script, or installed using `python3 setup.py install`.
 
 ```bash
-python3 3dsconv.py [options] game.3ds [game.3ds ...]
+# Use refactored modular implementation (default)
+python3 -m dsconv [options] game.3ds [game.3ds ...]
+
+# Use legacy monolithic implementation (for validation/compatibility)
+python3 -m dsconv --legacy [options] game.3ds [game.3ds ...]
 ```
+
+See [docs/LEGACY_CODE_STRATEGY.md](docs/LEGACY_CODE_STRATEGY.md) for details about the dual-implementation approach.
 
 * `--output=<dir>` - Save converted files in specified directory; default is current directory or value of variable `output-directory`
 * `--boot9=<file>` - Path to dump of protected ARM9 bootROM (cannot be used with --prod-keys)
