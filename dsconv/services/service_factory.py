@@ -104,9 +104,17 @@ class ServiceFactory:
         decryption_service = None
         if config.key_provider:
             try:
+                from dsconv.crypto.aes_adapter import PyAESAdapter
+
                 orig_key = config.key_provider.get_original_ncch_key()
                 key_derivation = KeyDerivationService(orig_key)
-                decryption_service = DecryptionService(key_derivation)
+
+                # Create AES cipher factory
+                def aes_cipher_factory(key: bytes, counter_value: int):
+                    """Factory for creating AES-CTR ciphers."""
+                    return PyAESAdapter(key, counter_value)
+
+                decryption_service = DecryptionService(key_derivation, aes_cipher_factory)
             except Exception as e:
                 # If key loading fails, continue without decryption
                 # (will fail later if encrypted content is encountered)
