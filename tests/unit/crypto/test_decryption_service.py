@@ -96,9 +96,9 @@ class TestDecryptionService:
 
         # Assert
         # Should have created exactly one cipher
-        assert len(mock_cipher_factory.created_ciphers) == 1  # type: ignore[attr-defined]
+        assert len(mock_cipher_factory.created_ciphers) == 1
 
-        cipher = mock_cipher_factory.created_ciphers[0]  # type: ignore[attr-defined]
+        cipher = mock_cipher_factory.created_ciphers[0]
 
         # Verify the cipher was created with correct parameters
         # Key should be the reversed key_y (from our mock key derivation)
@@ -186,7 +186,7 @@ class TestDecryptionService:
         service.decrypt_extheader(encrypted_data, key_y, title_id)
 
         # Assert
-        cipher = mock_cipher_factory.created_ciphers[0]  # type: ignore[attr-defined]
+        cipher = mock_cipher_factory.created_ciphers[0]
 
         # Expected counter: title_id || 0x01 || 0x00...00 (7 bytes)
         expected_counter_bytes = title_id + b"\x01" + bytes(7)
@@ -210,9 +210,9 @@ class TestDecryptionService:
         result = service.decrypt_exefs(encrypted_data, key_y, title_id, offset_in_blocks)
 
         # Assert
-        assert len(mock_cipher_factory.created_ciphers) == 1  # type: ignore[attr-defined]
+        assert len(mock_cipher_factory.created_ciphers) == 1
 
-        cipher = mock_cipher_factory.created_ciphers[0]  # type: ignore[attr-defined]
+        cipher = mock_cipher_factory.created_ciphers[0]
 
         # Key should be the reversed key_y
         assert cipher.key == key_y[::-1]
@@ -243,7 +243,7 @@ class TestDecryptionService:
         service.decrypt_exefs(encrypted_data, key_y, title_id, offset_in_blocks)
 
         # Assert
-        cipher = mock_cipher_factory.created_ciphers[0]  # type: ignore[attr-defined]
+        cipher = mock_cipher_factory.created_ciphers[0]
 
         # Counter should include the offset
         expected_counter_bytes = title_id + b"\x02" + bytes(7)
@@ -264,7 +264,7 @@ class TestDecryptionService:
         service.decrypt_exefs(encrypted_data, key_y, title_id, offset_in_blocks)
 
         # Assert
-        cipher = mock_cipher_factory.created_ciphers[0]  # type: ignore[attr-defined]
+        cipher = mock_cipher_factory.created_ciphers[0]
 
         # Expected counter: title_id || 0x02 || 0x00...00 (7 bytes) + offset
         expected_counter_bytes = title_id + b"\x02" + bytes(7)
@@ -288,7 +288,7 @@ class TestDecryptionService:
         service.decrypt_exefs(encrypted_data, key_y, title_id)
 
         # Assert
-        cipher = mock_cipher_factory.created_ciphers[0]  # type: ignore[attr-defined]
+        cipher = mock_cipher_factory.created_ciphers[0]
 
         # Counter should have no offset added (offset = 0)
         expected_counter_bytes = title_id + b"\x02" + bytes(7)
@@ -367,7 +367,7 @@ class TestDecryptionService:
         service.decrypt_extheader(encrypted_data, key_y, title_id)
 
         # Assert
-        cipher = mock_cipher_factory.created_ciphers[0]  # type: ignore[attr-defined]
+        cipher = mock_cipher_factory.created_ciphers[0]
 
         # The key should be derived using the actual key derivation service
         # (not our mock that just reverses it)
@@ -388,7 +388,7 @@ class TestDecryptionService:
         service.decrypt_exefs(encrypted_data, key_y, title_id)
 
         # Assert
-        cipher = mock_cipher_factory.created_ciphers[0]  # type: ignore[attr-defined]
+        cipher = mock_cipher_factory.created_ciphers[0]
 
         # The key should be derived using the actual key derivation service
         expected_key = key_derivation.derive_normal_key(key_y)
@@ -429,15 +429,15 @@ class TestDecryptionService:
 
         # Test extheader counter
         service.decrypt_extheader(encrypted_data, key_y, title_id)
-        extheader_cipher = mock_cipher_factory.created_ciphers[0]  # type: ignore[attr-defined]
+        extheader_cipher = mock_cipher_factory.created_ciphers[0]
         assert extheader_cipher.counter_value == expected_extheader_suffix
 
         # Clear created ciphers
-        mock_cipher_factory.created_ciphers.clear()  # type: ignore[attr-defined]
+        mock_cipher_factory.created_ciphers.clear()
 
         # Test exefs counter (with offset 0)
         service.decrypt_exefs(encrypted_data, key_y, title_id, 0)
-        exefs_cipher = mock_cipher_factory.created_ciphers[0]  # type: ignore[attr-defined]
+        exefs_cipher = mock_cipher_factory.created_ciphers[0]
         assert exefs_cipher.counter_value == expected_exefs_suffix
 
     def test_different_methods_use_different_counter_types(self, service, mock_cipher_factory):
@@ -449,12 +449,12 @@ class TestDecryptionService:
 
         # Act
         service.decrypt_extheader(encrypted_data, key_y, title_id)
-        extheader_cipher = mock_cipher_factory.created_ciphers[0]  # type: ignore[attr-defined]
+        extheader_cipher = mock_cipher_factory.created_ciphers[0]
 
-        mock_cipher_factory.created_ciphers.clear()  # type: ignore[attr-defined]
+        mock_cipher_factory.created_ciphers.clear()
 
         service.decrypt_exefs(encrypted_data, key_y, title_id, 0)
-        exefs_cipher = mock_cipher_factory.created_ciphers[0]  # type: ignore[attr-defined]
+        exefs_cipher = mock_cipher_factory.created_ciphers[0]
 
         # Assert - counters should differ by 0x01 vs 0x02
         # ExtHeader: 0x00...00 || 0x01 || 0x00...00

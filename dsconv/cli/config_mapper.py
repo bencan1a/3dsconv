@@ -47,6 +47,9 @@ class CLIConfigMapper:
                 raise IndexError("No input file specified")
             input_file = args.game[0]
 
+        # Type narrowing: input_file is guaranteed to be str at this point
+        assert input_file is not None
+
         # Determine output file path
         output_file = CLIConfigMapper._determine_output_path(input_file, args.output)
 

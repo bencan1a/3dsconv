@@ -102,7 +102,7 @@ def parse_args() -> argparse.Namespace:
 # check for pyaes which is used for crypto
 pyaes_found = False
 try:
-    import pyaes  # type: ignore[import-not-found]
+    import pyaes  # type: ignore[import-untyped]
 
     pyaes_found = True
 except ImportError:
