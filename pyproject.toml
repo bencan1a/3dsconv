@@ -124,3 +124,8 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=html",
 ]
+markers = [
+    "e2e: End-to-end tests that run the complete conversion pipeline",
+    "slow: Tests that take longer to run (e.g., full file conversions)",
+    "integration: Integration tests that test multiple components together",
+]
