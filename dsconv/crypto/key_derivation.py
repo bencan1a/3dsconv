@@ -6,6 +6,8 @@ deriving encryption keys used in the CCI to CIA conversion process. The key
 derivation follows the Nintendo 3DS encryption scheme.
 """
 
+from typing import cast
+
 from dsconv.utils import rol
 
 
@@ -73,4 +75,4 @@ class KeyDerivationService:
         )
 
         # Convert back to bytes (big-endian, 16 bytes)
-        return key_int.to_bytes(0x10, byteorder="big")
+        return cast(bytes, key_int.to_bytes(0x10, byteorder="big"))

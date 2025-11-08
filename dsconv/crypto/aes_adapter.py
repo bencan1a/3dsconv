@@ -5,6 +5,7 @@ for testability and flexibility in choosing encryption implementations.
 """
 
 from abc import ABC, abstractmethod
+from typing import cast
 
 
 class IAESCipher(ABC):
@@ -76,7 +77,7 @@ class PyAESAdapter(IAESCipher):
             raise ValueError("AES key must be exactly 16 bytes")
 
         try:
-            import pyaes  # type: ignore[import-untyped]
+            import pyaes  # type: ignore[import-not-found]
 
             self._pyaes = pyaes
         except ImportError as e:
@@ -102,7 +103,7 @@ class PyAESAdapter(IAESCipher):
         # Create a new counter for each operation to maintain state independence
         ctr = self._pyaes.Counter(initial_value=self.counter_value)
         cipher = self._pyaes.AESModeOfOperationCTR(self.key, counter=ctr)
-        return cipher.decrypt(data)
+        return cast(bytes, cipher.decrypt(data))
 
     def encrypt(self, data: bytes) -> bytes:
         """Encrypt data using AES-CTR mode.
@@ -119,7 +120,7 @@ class PyAESAdapter(IAESCipher):
         # Create a new counter for each operation to maintain state independence
         ctr = self._pyaes.Counter(initial_value=self.counter_value)
         cipher = self._pyaes.AESModeOfOperationCTR(self.key, counter=ctr)
-        return cipher.encrypt(data)
+        return cast(bytes, cipher.encrypt(data))
 
 
 class MockAESAdapter(IAESCipher):
