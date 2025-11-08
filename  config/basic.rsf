@@ -1,0 +1,68 @@
+BasicInfo:
+  Title                 : "HelloWorld"
+  CompanyCode           : "00"
+  ProductCode           : "CTR-H-HELW"
+  ContentType           : Application
+  Logo                  : Nintendo
+
+TitleInfo:
+  UniqueId              : 0x0012345
+  Category              : Application
+
+Option:
+  UseOnSD               : true
+  EnableCompress        : true
+  FreeProductCode       : true
+  EnableCrypt           : false
+  MediaFootPadding      : false
+
+SystemControlInfo:
+  SaveDataSize          : "0KB"
+  RemasterVersion       : 0
+  StackSize             : 0x40000
+
+AccessControlInfo:
+  IdealProcessor        : 0
+  Priority              : 16
+  CoreVersion           : 2
+  MemoryType            : Application
+  ResourceLimitCategory : Application
+  HandleTableSize       : 0x200        # number of handles; 0x200 is a safe small default
+  ServiceAccessControl  :
+    - "srv:"
+    - "APT:U"
+    - "fs:USER"
+    - "hid:USER"
+  SystemCallAccess      :
+    ControlMemory                 : 1
+    QueryMemory                   : 2
+    ExitProcess                   : 3
+    GetProcessAffinityMask        : 4
+    SetProcessAffinityMask        : 5
+    SetProcessIdealProcessor      : 6
+    GetProcessIdealProcessor      : 7
+    CreateThread                  : 8
+    ExitThread                    : 9
+    SleepThread                   : 10
+    GetThreadPriority             : 11
+    SetThreadPriority             : 12
+    GetThreadAffinityMask         : 13
+    SetThreadAffinityMask         : 14
+    GetThreadIdealProcessor       : 15
+    SetThreadIdealProcessor       : 16
+    GetCurrentProcessorNumber     : 17
+    Run                           : 18
+    CreateMutex                   : 19
+    ReleaseMutex                  : 20
+    CreateSemaphore               : 21
+    ReleaseSemaphore              : 22
+    CreateEvent                   : 23
+    SignalEvent                   : 24
+    ClearEvent                    : 25
+    CreateTimer                   : 26
+    SetTimer                      : 27
+    CancelTimer                   : 28
+    ClearTimer                    : 29
+    CreateMemoryBlock             : 30
+    MapMemoryBlock                : 31
+    UnmapMemoryBlock              : 32
