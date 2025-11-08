@@ -257,7 +257,9 @@ if args.dev_keys:
                 with open(path, "rb") as c:
                     certchain = c.read(0xA00)
                     correct_hash = "d5c3d811a7eb87340aa9f4ab1841b6c4"
-                    if hashlib.md5(certchain).hexdigest() == correct_hash:
+                    # MD5 is used for integrity verification of a known Nintendo 3DS
+                    # dev certificate chain file, not for cryptographic security.
+                    if hashlib.md5(certchain).hexdigest() == correct_hash:  # codeql[py/weak-cryptographic-algorithm]
                         certchain_dev = certchain
 
     check_path("certchain-dev.bin")
@@ -336,7 +338,9 @@ if pyaes_found:
             # get Original NCCH (slot 0x2C key X)
             f.seek(0x59D0 + keys_offset)
             key = f.read(0x10)
-            key_hash = hashlib.md5(key).hexdigest()
+            # MD5 is used for integrity verification of a known encryption key
+            # from the Nintendo 3DS boot9 ROM, not for cryptographic security.
+            key_hash = hashlib.md5(key).hexdigest()  # codeql[py/weak-cryptographic-algorithm]
             correct_hash = (
                 "49aa32c775608af6298ddc0fc6d18a7e"
                 if args.dev_keys

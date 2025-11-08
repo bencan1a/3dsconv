@@ -141,7 +141,10 @@ JWFnDuv/P7kyh1k="""
                             continue  # Try next path
 
                         # Validate MD5 hash
-                        actual_hash = hashlib.md5(certchain).hexdigest()
+                        # MD5 is used here for integrity verification of a known Nintendo 3DS
+                        # dev certificate chain file, not for cryptographic security.
+                        # The hash is compared against a hardcoded known-good value.
+                        actual_hash = hashlib.md5(certchain).hexdigest()  # codeql[py/weak-cryptographic-algorithm]
                         if actual_hash == CertChainProvider.DEV_CERTCHAIN_HASH:
                             return certchain
 

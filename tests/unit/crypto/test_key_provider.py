@@ -365,7 +365,9 @@ class TestBoot9KeyProvider:
             key_at_offset = f.read(16)
 
         # Verify that the key at the calculated offset has the correct hash
-        key_hash = hashlib.md5(key_at_offset).hexdigest()
+        # MD5 is used here for test verification only, matching the production code's
+        # use of MD5 for integrity checking of known encryption keys.
+        key_hash = hashlib.md5(key_at_offset).hexdigest()  # codeql[py/weak-cryptographic-algorithm]
         expected_hash = self.TEST_DEV_HASH if dev_keys else self.TEST_RETAIL_HASH
         assert key_hash == expected_hash
 

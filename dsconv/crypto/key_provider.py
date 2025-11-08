@@ -166,7 +166,10 @@ class Boot9KeyProvider(IKeyProvider):
                     )
 
                 # Validate key hash
-                key_hash = hashlib.md5(key_bytes).hexdigest()
+                # MD5 is used here for integrity verification of a known encryption key
+                # from the Nintendo 3DS boot9 ROM, not for cryptographic security.
+                # The hash is compared against a hardcoded known-good value.
+                key_hash = hashlib.md5(key_bytes).hexdigest()  # codeql[py/weak-cryptographic-algorithm]
                 expected_hash = self.DEV_KEY_HASH if self.dev_keys else self.RETAIL_KEY_HASH
 
                 if key_hash != expected_hash:
