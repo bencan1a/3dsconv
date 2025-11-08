@@ -50,7 +50,7 @@ class NCCHHeader:
         if len(self.magic) != 4:
             raise ValueError("magic must be 4 bytes")
         if self.magic != b"NCCH":
-            raise ValueError(f"Invalid NCCH magic: {self.magic}")
+            raise ValueError(f"Invalid NCCH magic: {self.magic!r}")
         if len(self.signature) != 0x100:
             raise ValueError("signature must be 0x100 bytes")
         if len(self.partition_id) != 8:
