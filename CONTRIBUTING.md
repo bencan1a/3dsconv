@@ -29,7 +29,27 @@ Before contributing, please review:
 
 ## Development Setup
 
-### 1. Fork and Clone
+### Quick Start with Dev Container (Recommended)
+
+The easiest way to get started is using a dev container, which automatically sets up all dependencies:
+
+**Option 1: GitHub Codespaces**
+1. Click "Code" → "Codespaces" → "Create codespace on main"
+2. Wait for the container to build (includes all dev tools)
+3. Start coding!
+
+**Option 2: VS Code with Remote - Containers**
+1. Install the "Remote - Containers" extension in VS Code
+2. Open the repository and select "Reopen in Container"
+3. Everything will be set up automatically
+
+See [`.devcontainer/README.md`](.devcontainer/README.md) for more details.
+
+### Manual Setup
+
+If you prefer to set up your environment manually:
+
+#### 1. Fork and Clone
 
 ```bash
 # Fork the repository on GitHub, then:
@@ -37,7 +57,7 @@ git clone https://github.com/YOUR_USERNAME/3dsconv.git
 cd 3dsconv
 ```
 
-### 2. Set Up Virtual Environment
+#### 2. Set Up Virtual Environment
 
 ```bash
 # Create virtual environment
@@ -50,7 +70,7 @@ source venv/bin/activate
 venv\Scripts\activate
 ```
 
-### 3. Install Dependencies
+#### 3. Install Dependencies
 
 ```bash
 # Install package in editable mode with dev tools
@@ -63,7 +83,7 @@ black --version
 ruff --version
 ```
 
-### 4. Verify Setup
+#### 4. Verify Setup
 
 ```bash
 # Run existing tests
