@@ -165,6 +165,42 @@ pytest -k "test_parse_args"     # Specific test pattern
 pytest --cov=dsconv             # With coverage
 ```
 
+### Test Files for Conversion Testing
+
+The repository includes comprehensive test files for validating CCI to CIA conversion:
+
+**Location:** `examples/test-ccis/`
+- 6 test CCI files covering different encryption scenarios
+- 6 matching CIA files providing canonical conversion outputs
+- Detailed documentation in [examples/test-ccis/README.md](../../examples/test-ccis/README.md)
+
+**Test Coverage:**
+| File Pair | Encryption Type | Description |
+|-----------|----------------|-------------|
+| test-01-nocrypt.{cci,cia} | None (0x04) | Baseline unencrypted test |
+| test-02-ncch-original.{cci,cia} | Slot 0x2C | Original NCCH encryption (firmware 1.0+) |
+| test-03-ncch-7x.{cci,cia} | Slot 0x25 | 7.x crypto (firmware 7.0+) |
+| test-04-fixed-key.{cci,cia} | Fixed key | Debug/development encryption |
+| test-05-compressed.{cci,cia} | None + LZ77 | Compressed ExeFS content |
+| test-06-new3ds.{cci,cia} | Slot 0x25 | New3DS optimized build |
+
+**RSF Templates:** `examples/rsf templates/`
+- 6 RSF template files corresponding to each test scenario
+- Used to generate the test CCI/CIA files with makerom
+- Files: basic-nocrypt.rsf, basic-ncch-original.rsf, basic-ncch-7x.rsf, basic-fixed-key.rsf, basic-compressed.rsf, basic-new3ds.rsf
+
+**Usage in Testing:**
+```bash
+# Test conversion with unencrypted file
+3dsconv examples/test-ccis/test-01-nocrypt.cci
+
+# Test with NCCH encryption (requires boot9.bin)
+3dsconv -b boot9.bin examples/test-ccis/test-02-ncch-original.cci
+
+# Verify output matches canonical CIA
+diff output.cia examples/test-ccis/test-01-nocrypt.cia
+```
+
 ## Common Tasks & Solutions
 
 ### Adding a New CLI Option
