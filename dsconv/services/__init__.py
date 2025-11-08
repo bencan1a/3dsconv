@@ -11,6 +11,7 @@ from .progress_reporter import (
     IProgressReporter,
     MockProgressReporter,
 )
+from .service_factory import ServiceFactory
 
 __all__ = [
     "ConsoleProgressReporter",
@@ -18,4 +19,5 @@ __all__ = [
     "MockProgressReporter",
     "ConversionConfig",
     "ConversionService",
+    "ServiceFactory",
 ]
