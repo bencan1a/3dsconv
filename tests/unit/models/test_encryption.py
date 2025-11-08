@@ -165,14 +165,14 @@ class TestEncryptionContext:
         # Act & Assert
         with pytest.raises(TypeError, match="encryption_type must be EncryptionType enum"):
             EncryptionContext(
-                encryption_type=invalid_type, normal_key=normal_key, title_id=title_id
+                encryption_type=invalid_type, normal_key=normal_key, title_id=title_id  # type: ignore[arg-type]
             )
 
     def test_create_with_none_encryption_type_raises_error(self):
         """Test creating context with None encryption_type raises TypeError."""
         # Act & Assert
         with pytest.raises(TypeError, match="encryption_type must be EncryptionType enum"):
-            EncryptionContext(encryption_type=None, normal_key=None, title_id=b"\x00" * 8)
+            EncryptionContext(encryption_type=None, normal_key=None, title_id=b"\x00" * 8)  # type: ignore[arg-type]
 
     def test_needs_decryption_property_with_decrypted(self):
         """Test needs_decryption returns False for DECRYPTED."""
