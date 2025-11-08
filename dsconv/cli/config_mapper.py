@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from dsconv.crypto.key_provider import IKeyProvider
 
-from dsconv.crypto.key_provider import Boot9KeyProvider, ProdKeysKeyProvider
 from dsconv.services.conversion_config import ConversionConfig
 
 
@@ -81,6 +80,9 @@ class CLIConfigMapper:
         Returns:
             Appropriate key provider or None if no keys are available/needed
         """
+        # Lazy import to reduce initial module loading time
+        from dsconv.crypto.key_provider import Boot9KeyProvider, ProdKeysKeyProvider
+        
         # Priority 1: Explicit prod.keys path
         if hasattr(args, "prod_keys") and args.prod_keys:
             # Check if file exists before creating provider
@@ -114,6 +116,9 @@ class CLIConfigMapper:
         5. boot9.bin in ~/.3ds/
         6. boot9_prot.bin in ~/.3ds/
         """
+        # Lazy import to reduce initial module loading time
+        from dsconv.crypto.key_provider import Boot9KeyProvider, ProdKeysKeyProvider
+        
         # Try prod.keys locations first
         prod_keys_paths = [
             "prod.keys",
