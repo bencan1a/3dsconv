@@ -31,36 +31,65 @@ def compute_sha256(file_path: Path) -> str:
     return sha256.hexdigest()
 
 
+def get_test_cci_files() -> list[tuple[str, Path, Path]]:
+    """
+    Find all CCI test files in examples/test-ccis and their corresponding CIA files.
+
+    Returns:
+        List of tuples: (test_name, cci_path, canonical_cia_path)
+    """
+    project_root = Path(__file__).parent.parent.parent
+    test_ccis_dir = project_root / "examples" / "test-ccis"
+
+    if not test_ccis_dir.exists():
+        return []
+
+    test_cases = []
+    for cci_file in sorted(test_ccis_dir.glob("*.cci")):
+        # Find corresponding CIA file
+        cia_file = cci_file.with_suffix(".cia")
+        if cia_file.exists():
+            test_name = cci_file.stem  # e.g., "test-01-nocrypt"
+            test_cases.append((test_name, cci_file, cia_file))
+
+    return test_cases
+
+
 class TestPipelineValidation:
     """End-to-end validation tests for the conversion pipeline."""
 
     @pytest.mark.e2e
     @pytest.mark.slow
-    def test_hello_cci_conversion_matches_canonical(self, tmp_path):
+    @pytest.mark.parametrize("test_name,input_cci,canonical_cia", get_test_cci_files())
+    def test_cci_conversion_matches_canonical(self, test_name, input_cci, canonical_cia, tmp_path):
         """
-        Test that converting hello.cci produces output identical to canonical hello.cia.
+        Test that converting a CCI file produces output identical to canonical CIA.
 
         This test validates the entire conversion pipeline by:
-        1. Running hello.cci through dsconv
-        2. Comparing the output byte-by-byte with the canonical hello.cia
+        1. Running a CCI file through dsconv
+        2. Comparing the output with the canonical CIA using SHA256 hash
         3. Cleaning up on success, preserving output on failure for debugging
 
-        The hello.cci/hello.cia files serve as a canonical test case to ensure
-        the conversion pipeline produces deterministic, correct output.
+        The test is parameterized to run against all CCI files in examples/test-ccis,
+        covering various encryption modes and configurations.
+
+        Args:
+            test_name: Name of the test case (e.g., "test-01-nocrypt")
+            input_cci: Path to the input CCI file
+            canonical_cia: Path to the canonical CIA file
+            tmp_path: Pytest fixture for temporary directory
         """
         # Arrange
         project_root = Path(__file__).parent.parent.parent
-        input_cci = project_root / "examples" / "hello.cci"
-        canonical_cia = project_root / "examples" / "hello.cia"
 
-        # Verify test inputs exist
+        # Verify test inputs exist (should always pass due to get_test_cci_files filter)
         assert input_cci.exists(), f"Test input not found: {input_cci}"
         assert canonical_cia.exists(), f"Canonical output not found: {canonical_cia}"
 
         # Create test output directory
         output_dir = tmp_path / "test_outputs"
         output_dir.mkdir()
-        output_cia = output_dir / "hello.cia"
+        output_cia = output_dir / canonical_cia.name
 
         # Act
         # Run dsconv via subprocess to convert the CCI file
@@ -95,7 +124,8 @@ class TestPipelineValidation:
             canonical_size = canonical_cia.stat().st_size
 
             error_msg = (
-                f"Output CIA does not match canonical CIA\n"
+                f"Conversion output does not match canonical CIA for test: {test_name}\n"
+                f"Input CCI:        {input_cci.name}\n"
                 f"Output SHA256:    {output_hash}\n"
                 f"Canonical SHA256: {canonical_hash}\n"
                 f"Output size:      {output_size:,} bytes\n"
