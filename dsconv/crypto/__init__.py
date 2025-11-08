@@ -1,5 +1,10 @@
-"""Cryptographic services for 3dsconv."""
+"""Cryptographic services for 3dsconv.
 
+This package provides encryption and key management services
+for Nintendo 3DS content conversion.
+"""
+
+from .aes_adapter import IAESCipher, MockAESAdapter, PyAESAdapter
 from .key_provider import (
     Boot9KeyProvider,
     IKeyProvider,
@@ -11,20 +16,17 @@ from .key_provider import (
 )
 
 __all__ = [
+    # AES Cipher adapters
+    "IAESCipher",
+    "PyAESAdapter",
+    "MockAESAdapter",
+    # Key providers
     "IKeyProvider",
     "ProdKeysKeyProvider",
     "Boot9KeyProvider",
     "MockKeyProvider",
+    # Exceptions
     "KeyProviderError",
     "KeyNotFoundError",
     "InvalidKeyFileError",
 ]
-"""Cryptographic services for 3dsconv.
-
-This package provides encryption and key management services
-for Nintendo 3DS content conversion.
-"""
-
-from .aes_adapter import IAESCipher, MockAESAdapter, PyAESAdapter
-
-__all__ = ["IAESCipher", "PyAESAdapter", "MockAESAdapter"]
