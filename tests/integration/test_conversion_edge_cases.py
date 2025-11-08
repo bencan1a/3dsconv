@@ -221,9 +221,7 @@ class TestConversionErrors:
         )
 
         # Act & Assert
-        service = ServiceFactory.create_conversion_service(
-            str(empty_cci), str(output_file), config
-        )
+        service = ServiceFactory.create_conversion_service(str(empty_cci), str(output_file), config)
 
         with pytest.raises((ValueError, struct.error, KeyError, IndexError)):
             service.convert(config)
