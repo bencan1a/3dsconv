@@ -545,7 +545,16 @@ class TestConvertWithEncryptedContent:
             bytes(header_data),
             b"I" * 0x36C0,
         ]
-        service.ncch_reader.reader.read_at.side_effect = [bytes(0x200), b"I" * 0x36C0]
+        # read_at calls:
+        # 1. ExeFS header (for icon extraction)
+        # 2. Icon data (for icon extraction)
+        # 3. NCCH header (for CIA writing)
+        service.ncch_reader.reader.read_at.side_effect = [
+            bytes(0x200),
+            b"I" * 0x36C0,
+            bytes(0x200)  # NCCH header for _write_cia
+        ]
+        service.ncch_reader.reader.file.read.return_value = b"\x00" * 1024
 
         # Call convert
         service.convert(config)
@@ -892,14 +901,23 @@ class TestConvert:
         header_data[8:12] = (0).to_bytes(4, "little")
         header_data[12:16] = (0x36C0).to_bytes(4, "little")
         icon_data = b"I" * 0x36C0
-        service.ncch_reader.reader.read_at.side_effect = [bytes(header_data), icon_data]
+        # read_at calls:
+        # 1. ExeFS header (for icon extraction)
+        # 2. Icon data (for icon extraction)
+        # 3. NCCH header (for CIA writing)
+        service.ncch_reader.reader.read_at.side_effect = [
+            bytes(header_data),
+            icon_data,
+            bytes(0x200)  # NCCH header for _write_cia
+        ]
+        service.ncch_reader.reader.file.read.return_value = b"\x00" * 1024
 
         # Call convert
         service.convert(config)
 
         # Check that all stages were reported
         reporter = service.progress_reporter
-        assert len(reporter.stages) == 5
+        assert len(reporter.stages) == 6
         assert "Reading CCI structure" in reporter.stages
         assert "Analyzing encryption" in reporter.stages
         assert "Verifying ExtHeader" in reporter.stages

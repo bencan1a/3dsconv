@@ -7,15 +7,22 @@ using ctrtool integration in the CLI.
 
 import subprocess
 import sys
+import os
 from pathlib import Path
 
 import pytest
 
 
 @pytest.fixture
-def test_ccis_path():
+def project_root():
+    """Get the project root directory."""
+    return Path(__file__).parent.parent.parent
+
+
+@pytest.fixture
+def test_ccis_path(project_root):
     """Get path to test CCIs or skip if not found."""
-    test_ccis = Path(__file__).parent.parent.parent / "examples" / "test-ccis"
+    test_ccis = project_root / "examples" / "test-ccis"
     if not test_ccis.exists():
         pytest.skip("Test CCI files not found")
     return test_ccis
@@ -24,11 +31,17 @@ def test_ccis_path():
 class TestCtrtoolIntegrationMocked:
     """Integration tests for ctrtool functionality with mocked ctrtool calls."""
 
-    def test_to_cxi_flag_requires_ctrtool(self, tmp_path):
+    def test_to_cxi_flag_requires_ctrtool(self, tmp_path, project_root):
         """Test that --to-cxi fails gracefully when ctrtool is not found."""
         # Create a test CCI file (minimal stub)
         cci = tmp_path / "game.cci"
         cci.write_bytes(b"mock cci")
+
+        # Prepare environment
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(project_root)
+        env["CTRTOOL_PATH"] = ""
+        env["PATH"] = os.path.dirname(sys.executable)  # Ensure ctrtool is not found in PATH
 
         # Run with --to-cxi but ctrtool not available
         result = subprocess.run(
@@ -41,14 +54,14 @@ class TestCtrtoolIntegrationMocked:
             ],
             capture_output=True,
             text=True,
-            env={**dict(subprocess.os.environ), "CTRTOOL_PATH": ""},
+            env=env,
         )
 
         # Should fail with helpful error message
         assert result.returncode == 1
         assert "ctrtool not found" in result.stdout or "ctrtool not found" in result.stderr
 
-    def test_ctrtool_path_option(self, tmp_path):
+    def test_ctrtool_path_option(self, tmp_path, project_root):
         """Test that --ctrtool-path option works."""
         # Create a test CCI file (minimal stub)
         cci = tmp_path / "game.cci"
@@ -57,7 +70,15 @@ class TestCtrtoolIntegrationMocked:
         # Create a fake ctrtool
         fake_ctrtool = tmp_path / "fake_ctrtool"
         fake_ctrtool.write_text("#!/bin/sh\nexit 0")
-        fake_ctrtool.chmod(0o755)
+        # On Windows, chmod might not make it executable in the same way, but it's a file path check mostly
+        try:
+            fake_ctrtool.chmod(0o755)
+        except OSError:
+            pass
+
+        # Prepare environment
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(project_root)
 
         # Run with --ctrtool-path - will still fail on conversion but validates path logic
         result = subprocess.run(
@@ -72,13 +93,14 @@ class TestCtrtoolIntegrationMocked:
             ],
             capture_output=True,
             text=True,
+            env=env,
         )
 
         # Should NOT complain about ctrtool not found
         assert "ctrtool not found" not in result.stdout
         assert "ctrtool not found" not in result.stderr
 
-    def test_verbose_shows_ctrtool_path(self, tmp_path):
+    def test_verbose_shows_ctrtool_path(self, tmp_path, project_root):
         """Test that verbose mode shows which ctrtool is being used."""
         # Create test files
         cci = tmp_path / "game.cci"
@@ -86,6 +108,10 @@ class TestCtrtoolIntegrationMocked:
 
         fake_ctrtool = tmp_path / "my_ctrtool"
         fake_ctrtool.write_text("mock")
+
+        # Prepare environment
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(project_root)
 
         result = subprocess.run(
             [
@@ -100,6 +126,7 @@ class TestCtrtoolIntegrationMocked:
             ],
             capture_output=True,
             text=True,
+            env=env,
         )
 
         # Verbose should show ctrtool path
@@ -110,7 +137,7 @@ class TestCtrtoolIntegrationMocked:
 class TestCtrtoolBatchMode:
     """Integration tests for ctrtool with batch mode."""
 
-    def test_batch_with_to_cxi_requires_ctrtool(self, tmp_path):
+    def test_batch_with_to_cxi_requires_ctrtool(self, tmp_path, project_root):
         """Test that batch mode with --to-cxi requires ctrtool."""
         batch_folder = tmp_path / "batch"
         batch_folder.mkdir()
@@ -118,6 +145,12 @@ class TestCtrtoolBatchMode:
         # Create a test CCI file
         cci = batch_folder / "game.cci"
         cci.write_bytes(b"mock cci")
+
+        # Prepare environment
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(project_root)
+        env["CTRTOOL_PATH"] = ""
+        env["PATH"] = os.path.dirname(sys.executable)  # Ensure ctrtool is not found in PATH
 
         result = subprocess.run(
             [
@@ -130,7 +163,7 @@ class TestCtrtoolBatchMode:
             ],
             capture_output=True,
             text=True,
-            env={**dict(subprocess.os.environ), "CTRTOOL_PATH": ""},
+            env=env,
         )
 
         assert result.returncode == 1
@@ -153,9 +186,9 @@ class TestCtrtoolRealConversion:
         path = find_ctrtool()
         if not path:
             pytest.skip("ctrtool not installed - skipping real conversion test")
-        return path
+        return os.path.abspath(path)
 
-    def test_cci_to_cia_to_cxi_workflow(self, test_ccis_path, ctrtool_path, tmp_path):
+    def test_cci_to_cia_to_cxi_workflow(self, test_ccis_path, ctrtool_path, tmp_path, project_root):
         """Test complete workflow: CCI -> CIA -> CXI."""
         # Copy test CCI to temp dir
         source_cci = test_ccis_path / "test-01-nocrypt.cci"
@@ -164,6 +197,10 @@ class TestCtrtoolRealConversion:
 
         cci = tmp_path / "game.cci"
         cci.write_bytes(source_cci.read_bytes())
+
+        # Prepare environment
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(project_root)
 
         # Run conversion with --to-cxi
         result = subprocess.run(
@@ -180,6 +217,7 @@ class TestCtrtoolRealConversion:
             capture_output=True,
             text=True,
             cwd=str(tmp_path),
+            env=env,
         )
 
         # Check conversion succeeded
@@ -190,7 +228,7 @@ class TestCtrtoolRealConversion:
         if cxi.exists():
             assert cxi.stat().st_size > 0
 
-    def test_batch_cci_to_cxi_workflow(self, test_ccis_path, ctrtool_path, tmp_path):
+    def test_batch_cci_to_cxi_workflow(self, test_ccis_path, ctrtool_path, tmp_path, project_root):
         """Test batch workflow: multiple CCIs -> CIAs -> CXIs."""
         # Create batch folder with test CCIs
         batch_folder = tmp_path / "batch"
@@ -203,6 +241,10 @@ class TestCtrtoolRealConversion:
         # Copy two test files
         (batch_folder / "game1.cci").write_bytes(source_cci.read_bytes())
         (batch_folder / "game2.cci").write_bytes(source_cci.read_bytes())
+
+        # Prepare environment
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(project_root)
 
         # Run batch conversion with --to-cxi
         result = subprocess.run(
@@ -219,6 +261,7 @@ class TestCtrtoolRealConversion:
             ],
             capture_output=True,
             text=True,
+            env=env,
         )
 
         # Check conversion message

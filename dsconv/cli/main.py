@@ -90,7 +90,7 @@ def main() -> None:
     print(f"Done converting {processed_files} out of {total_files} files.")
 
     # Extract CXI from converted CIA files if --to-cxi was specified
-    if args.to_cxi and converted_cia_files:
+    if args.to_cxi and converted_cia_files and ctrtool_path is not None:
         print("\nExtracting CXI files...")
         cxi_success = 0
         for cia_file in converted_cia_files:

@@ -210,7 +210,8 @@ class TestConversionConfig:
         )
 
         # Act & Assert
-        with pytest.raises(FileNotFoundError, match=str(input_file)):
+        import re
+        with pytest.raises(FileNotFoundError, match=re.escape(str(input_file))):
             config.validate()
 
     def test_validate_with_directory_instead_of_file_raises_error(self, tmp_path):
@@ -292,8 +293,9 @@ class TestConversionConfig:
 
         # Assert
         assert "ConversionConfig" in repr_str
-        assert str(input_file) in repr_str
-        assert str(output_file) in repr_str
+        # Use repr() of the path string to match the escaped backslashes in the config repr
+        assert repr(str(input_file)) in repr_str or str(input_file) in repr_str
+        assert repr(str(output_file)) in repr_str or str(output_file) in repr_str
         assert "verbose=True" in repr_str
 
     def test_config_equality_with_same_values(self, tmp_path):

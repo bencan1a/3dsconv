@@ -310,17 +310,23 @@ class TestBoot9KeyProvider:
         boot9_file = tmp_path / "boot9.bin"
         self.create_boot9_file(boot9_file, 0x8000, dev_keys=False)
 
-        # Make file unreadable
-        os.chmod(boot9_file, 0o000)
+        # Mock open to raise PermissionError
+        original_open = open
+
+        def mock_open(file, mode="r", *args, **kwargs):
+            # Check if the file being opened is our boot9 file
+            # Handle both string paths and Path objects
+            if str(file) == str(boot9_file):
+                raise PermissionError("Mock permission error")
+            return original_open(file, mode, *args, **kwargs)
+
+        monkeypatch.setattr("builtins.open", mock_open)
+
         provider = Boot9KeyProvider(str(boot9_file), dev_keys=False)
 
-        try:
-            # Act & Assert
-            with pytest.raises(InvalidKeyFileError, match="Failed to read boot9 file"):
-                provider.get_original_ncch_key()
-        finally:
-            # Restore permissions for cleanup
-            os.chmod(boot9_file, 0o644)
+        # Act & Assert
+        with pytest.raises(InvalidKeyFileError, match="Failed to read boot9 file"):
+            provider.get_original_ncch_key()
 
     def test_get_original_ncch_key_with_getsize_error_raises_error(self, tmp_path, monkeypatch):
         """Test that OSError when getting file size raises InvalidKeyFileError."""

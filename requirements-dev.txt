@@ -1,4 +1,16 @@
 # Development dependencies for 3dsconv
+#
+# RECOMMENDED INSTALLATION:
+#   pip install -e ".[dev]"
+#
+# This file is maintained for compatibility but pyproject.toml is the
+# authoritative source. The above command installs all dependencies
+# (production + dev) from pyproject.toml.
+#
+# If you must use this file directly:
+#   pip install -r requirements-dev.txt
+
+# Production dependencies
 -r requirements.txt
 
 # Testing
@@ -9,7 +21,3 @@ pytest-cov>=4.0.0
 black>=23.0.0
 ruff>=0.1.0
 mypy>=1.0.0
-
-# Build tools
-build>=0.10.0
-twine>=4.0.0
