@@ -108,7 +108,8 @@ def discover_cci_files(folder_path: str) -> list[str]:
         folder_path: Path to the folder to search
 
     Returns:
-        List of full paths to CCI files found, sorted alphabetically
+        List of absolute paths to CCI files found, sorted alphabetically.
+        Example: ['/path/to/game1.cci', '/path/to/game2.3ds']
 
     Raises:
         FileNotFoundError: If the folder does not exist

@@ -35,7 +35,9 @@ def main() -> None:
             print("Done converting 0 out of 0 files.")
             return
         else:
-            print("Error: No input files specified. Use --batch <folder> or provide game file(s).")
+            print(
+                "Error: No input files specified. Use --batch <folder> or provide game file(s) as positional arguments."
+            )
             sys.exit(1)
 
     # Process each game file
