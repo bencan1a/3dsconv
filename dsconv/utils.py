@@ -61,6 +61,15 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument("--dev-keys", action="store_true", help="Use developer-unit keys")
 
+    # Batch mode argument
+    parser.add_argument(
+        "--batch",
+        metavar="folder-path",
+        default=None,
+        help="Batch mode: convert all CCI files in the specified folder. "
+        "Output defaults to input folder unless --output is specified.",
+    )
+
     # deprecated arguments; we want to print out a message on this
     # in the future we can probably use an `action` to handle this.
     parser.add_argument(
@@ -77,8 +86,8 @@ def parse_args() -> argparse.Namespace:
         "--no-convert", "--noconvert", default=argparse.SUPPRESS, help=argparse.SUPPRESS
     )
 
-    # positional arguments
-    parser.add_argument("game", nargs="+", help="Game file to convert to CIA")
+    # positional arguments - nargs="*" to allow batch mode without files
+    parser.add_argument("game", nargs="*", help="Game file(s) to convert to CIA")
 
     # if no arguments are provided, display help message
     if len(sys.argv) == 1:
@@ -86,6 +95,45 @@ def parse_args() -> argparse.Namespace:
         sys.exit(1)
 
     return parser.parse_args()
+
+
+def discover_cci_files(folder_path: str) -> list[str]:
+    """
+    Discover all CCI files in a folder.
+
+    Finds all files with .cci or .3ds extension (case-insensitive) in the
+    specified folder. Does not search subdirectories.
+
+    Args:
+        folder_path: Path to the folder to search
+
+    Returns:
+        List of full paths to CCI files found, sorted alphabetically
+
+    Raises:
+        FileNotFoundError: If the folder does not exist
+        NotADirectoryError: If the path exists but is not a directory
+    """
+    if not os.path.exists(folder_path):
+        raise FileNotFoundError(f"Batch folder not found: {folder_path}")
+
+    if not os.path.isdir(folder_path):
+        raise NotADirectoryError(f"Batch path is not a directory: {folder_path}")
+
+    cci_extensions = {".cci", ".3ds"}
+    cci_files = []
+
+    for filename in os.listdir(folder_path):
+        # Check extension case-insensitively
+        _, ext = os.path.splitext(filename)
+        if ext.lower() in cci_extensions:
+            full_path = os.path.join(folder_path, filename)
+            # Only include regular files, not directories
+            if os.path.isfile(full_path):
+                cci_files.append(full_path)
+
+    # Sort for consistent ordering
+    return sorted(cci_files)
 
 
 def rol(val, r_bits, max_bits):

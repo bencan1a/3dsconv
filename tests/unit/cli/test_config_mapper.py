@@ -671,3 +671,111 @@ class TestCLIConfigMapperIntegration:
         assert config2.ignore_bad_hashes is False
         assert config2.ignore_encryption is True
         assert config2.verbose is True
+
+
+class TestBatchModeOutputPath:
+    """Tests for batch mode output path handling."""
+
+    @pytest.fixture
+    def minimal_args(self):
+        """Create minimal argparse.Namespace with required fields."""
+        return argparse.Namespace(
+            game=["test.cci"],
+            output="",
+            boot9=None,
+            prod_keys=None,
+            ignore_bad_hashes=False,
+            ignore_encryption=False,
+            dev_keys=False,
+            verbose=False,
+        )
+
+    def test_batch_folder_used_when_no_output_specified(self, minimal_args):
+        """Test that batch folder is used as output when --output is not specified."""
+        # Arrange
+        batch_folder = "/batch/folder"
+
+        # Act
+        config = CLIConfigMapper.map_to_conversion_config(
+            minimal_args, input_file="game.cci", batch_folder=batch_folder
+        )
+
+        # Assert
+        assert config.output_file == os.path.join(batch_folder, "game.cia")
+
+    def test_output_overrides_batch_folder(self, minimal_args):
+        """Test that --output takes precedence over batch folder."""
+        # Arrange
+        batch_folder = "/batch/folder"
+        minimal_args.output = "/custom/output"
+
+        # Act
+        config = CLIConfigMapper.map_to_conversion_config(
+            minimal_args, input_file="game.cci", batch_folder=batch_folder
+        )
+
+        # Assert
+        assert config.output_file == os.path.join("/custom/output", "game.cia")
+
+    def test_no_batch_folder_uses_current_directory(self, minimal_args):
+        """Test that without batch folder, output goes to current directory."""
+        # Act
+        config = CLIConfigMapper.map_to_conversion_config(
+            minimal_args, input_file="game.cci", batch_folder=None
+        )
+
+        # Assert
+        assert config.output_file == "game.cia"
+
+    def test_determine_output_path_with_batch_folder(self):
+        """Test _determine_output_path with batch_folder parameter."""
+        # Act
+        result = CLIConfigMapper._determine_output_path(
+            "game.cci", "", batch_folder="/batch/folder"
+        )
+
+        # Assert
+        assert result == os.path.join("/batch/folder", "game.cia")
+
+    def test_determine_output_path_output_overrides_batch(self):
+        """Test that output_dir takes precedence over batch_folder."""
+        # Act
+        result = CLIConfigMapper._determine_output_path(
+            "game.cci", "/explicit/output", batch_folder="/batch/folder"
+        )
+
+        # Assert
+        assert result == os.path.join("/explicit/output", "game.cia")
+
+    def test_determine_output_path_neither_output_nor_batch(self):
+        """Test output when neither output nor batch folder is specified."""
+        # Act
+        result = CLIConfigMapper._determine_output_path("game.cci", "", batch_folder=None)
+
+        # Assert
+        assert result == "game.cia"
+
+    @pytest.mark.parametrize(
+        "input_file,output_dir,batch_folder,expected",
+        [
+            # Batch folder only
+            ("game.cci", "", "/batch", os.path.join("/batch", "game.cia")),
+            ("path/to/game.cci", "", "/batch", os.path.join("/batch", "game.cia")),
+            # Output overrides batch
+            ("game.cci", "/out", "/batch", os.path.join("/out", "game.cia")),
+            # No batch or output
+            ("game.cci", "", None, "game.cia"),
+            # Various filename formats with batch folder
+            ("game.3ds", "", "/batch", os.path.join("/batch", "game.cia")),
+            ("my-game_v1.cci", "", "/batch", os.path.join("/batch", "my-game_v1.cia")),
+        ],
+    )
+    def test_determine_output_path_combinations(
+        self, input_file, output_dir, batch_folder, expected
+    ):
+        """Test various combinations of input, output, and batch folder."""
+        # Act
+        result = CLIConfigMapper._determine_output_path(input_file, output_dir, batch_folder)
+
+        # Assert
+        assert result == expected

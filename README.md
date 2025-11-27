@@ -36,6 +36,9 @@ On Windows, CCIs can be dragged on top of `3dsconv.exe`. See [Encryption](#encry
 # Use refactored modular implementation (default)
 python3 -m dsconv [options] game.3ds [game.3ds ...]
 
+# Batch mode: convert all CCI files in a folder
+python3 -m dsconv --batch /path/to/folder [options]
+
 # Use legacy monolithic implementation (for validation/compatibility)
 python3 -m dsconv --legacy [options] game.3ds [game.3ds ...]
 ```
@@ -43,6 +46,7 @@ python3 -m dsconv --legacy [options] game.3ds [game.3ds ...]
 See [docs/LEGACY_CODE_STRATEGY.md](docs/LEGACY_CODE_STRATEGY.md) for details about the dual-implementation approach.
 
 * `--output=<dir>` - Save converted files in specified directory; default is current directory or value of variable `output-directory`
+* `--batch=<folder>` - Batch mode: convert all CCI (.cci, .3ds) files in the specified folder. Output defaults to input folder unless --output is specified
 * `--boot9=<file>` - Path to dump of protected ARM9 bootROM (cannot be used with --prod-keys)
 * `--prod-keys=<file>` - Path to prod.keys file containing encryption keys (cannot be used with --boot9)
 * `--overwrite` - Overwrite existing converted files
@@ -50,6 +54,23 @@ See [docs/LEGACY_CODE_STRATEGY.md](docs/LEGACY_CODE_STRATEGY.md) for details abo
 * `--ignore-encryption` - Ignore the encryption header value, assume the ROM as unencrypted
 * `--verbose` - Print more information
 * `--dev-keys` - Use developer-unit keys
+
+### Batch Mode
+
+Batch mode allows you to convert all CCI files in a folder at once. By default, output files are placed in the same folder as the input files. Use `--output` to specify a different output directory.
+
+```bash
+# Convert all CCIs in a folder (output to same folder)
+python3 -m dsconv --batch /path/to/roms
+
+# Convert all CCIs with custom output directory
+python3 -m dsconv --batch /path/to/roms --output /path/to/output
+
+# Batch mode with other options
+python3 -m dsconv --batch /path/to/roms --overwrite --verbose
+```
+
+**Note:** Batch mode is only supported in the refactored implementation (default). It is not available when using the `--legacy` flag.
 
 ## Encryption
 3dsconv requires encryption keys to decrypt files using Original NCCH encryption (slot 0x2C). You can provide these keys in one of two ways (but not both):

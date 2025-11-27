@@ -1,8 +1,10 @@
 """Refactored CLI implementation using modular architecture."""
 
+import sys
+
 from dsconv.cli.config_mapper import CLIConfigMapper
 from dsconv.services.service_factory import ServiceFactory
-from dsconv.utils import parse_args
+from dsconv.utils import discover_cci_files, parse_args
 
 
 def main() -> None:
@@ -24,14 +26,29 @@ def main() -> None:
         )
         return
 
+    # Determine the list of game files to process
+    game_files, is_batch_mode = _get_game_files(args)
+
+    if not game_files:
+        if is_batch_mode:
+            # In batch mode, empty folder is not an error - just a warning
+            print("Done converting 0 out of 0 files.")
+            return
+        else:
+            print("Error: No input files specified. Use --batch <folder> or provide game file(s).")
+            sys.exit(1)
+
     # Process each game file
-    total_files = len(args.game)
+    total_files = len(game_files)
     processed_files = 0
 
-    for game_file in args.game:
+    for game_file in game_files:
         try:
             # Map CLI args to domain configuration
-            config = CLIConfigMapper.map_to_conversion_config(args, game_file)
+            # For batch mode, use batch folder as default output if no --output specified
+            config = CLIConfigMapper.map_to_conversion_config(
+                args, game_file, batch_folder=args.batch
+            )
 
             # Ensure output file path is determined
             output_file = config.output_file
@@ -48,6 +65,33 @@ def main() -> None:
             continue
 
     print(f"Done converting {processed_files} out of {total_files} files.")
+
+
+def _get_game_files(args) -> tuple[list[str], bool]:
+    """Get the list of game files to process based on args.
+
+    Args:
+        args: Parsed command-line arguments
+
+    Returns:
+        Tuple of (list of game file paths, is_batch_mode flag)
+
+    Raises:
+        SystemExit: If batch folder doesn't exist or is not a directory
+    """
+    # Batch mode: discover files from folder
+    if args.batch:
+        try:
+            cci_files = discover_cci_files(args.batch)
+            if not cci_files:
+                print(f"Warning: No CCI files found in batch folder: {args.batch}")
+            return cci_files, True
+        except (FileNotFoundError, NotADirectoryError) as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+
+    # Normal mode: use provided game files
+    return args.game, False
 
 
 if __name__ == "__main__":
