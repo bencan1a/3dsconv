@@ -54,6 +54,8 @@ See [docs/LEGACY_CODE_STRATEGY.md](docs/LEGACY_CODE_STRATEGY.md) for details abo
 * `--ignore-encryption` - Ignore the encryption header value, assume the ROM as unencrypted
 * `--verbose` - Print more information
 * `--dev-keys` - Use developer-unit keys
+* `--to-cxi` - Extract CXI from converted CIA files using ctrtool (see [CXI Extraction](#cxi-extraction))
+* `--ctrtool-path=<path>` - Path to ctrtool executable (if not in PATH)
 
 ### Batch Mode
 
@@ -71,6 +73,30 @@ python3 -m dsconv --batch /path/to/roms --overwrite --verbose
 ```
 
 **Note:** Batch mode is only supported in the refactored implementation (default). It is not available when using the `--legacy` flag.
+
+### CXI Extraction
+
+The `--to-cxi` option allows you to extract CXI files from converted CIAs using [ctrtool](https://github.com/3DSGuy/Project_CTR). This enables a complete CCI → CIA → CXI pipeline.
+
+```bash
+# Convert CCI to CIA and extract CXI
+python3 -m dsconv --to-cxi game.cci
+
+# With custom ctrtool path
+python3 -m dsconv --to-cxi --ctrtool-path /path/to/ctrtool game.cci
+
+# Batch mode with CXI extraction
+python3 -m dsconv --batch /path/to/roms --to-cxi
+```
+
+**Requirements:**
+- ctrtool must be installed and available in PATH, or specified via `--ctrtool-path`
+- ctrtool can be downloaded from [Project_CTR releases](https://github.com/3DSGuy/Project_CTR/releases)
+
+**Environment Variable:**
+- `CTRTOOL_PATH` - Set this to the path of your ctrtool executable to avoid needing `--ctrtool-path`
+
+The extracted CXI files will be named after the original CIA (e.g., `game.cia` → `game.cxi`).
 
 ## Encryption
 3dsconv requires encryption keys to decrypt files using Original NCCH encryption (slot 0x2C). You can provide these keys in one of two ways (but not both):

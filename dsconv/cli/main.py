@@ -1,10 +1,16 @@
 """Refactored CLI implementation using modular architecture."""
 
+import os
 import sys
 
 from dsconv.cli.config_mapper import CLIConfigMapper
 from dsconv.services.service_factory import ServiceFactory
-from dsconv.utils import discover_cci_files, parse_args
+from dsconv.utils import (
+    convert_cia_to_cxi,
+    discover_cci_files,
+    find_ctrtool,
+    parse_args,
+)
 
 
 def main() -> None:
@@ -26,6 +32,19 @@ def main() -> None:
         )
         return
 
+    # Check ctrtool availability early if --to-cxi is specified
+    ctrtool_path = None
+    if args.to_cxi:
+        ctrtool_path = find_ctrtool(args.ctrtool_path)
+        if not ctrtool_path:
+            print(
+                "Error: ctrtool not found. Please install ctrtool and ensure it is in your PATH, "
+                "or specify its location with --ctrtool-path."
+            )
+            sys.exit(1)
+        if args.verbose:
+            print(f"Using ctrtool: {ctrtool_path}")
+
     # Determine the list of game files to process
     game_files, is_batch_mode = _get_game_files(args)
 
@@ -43,6 +62,7 @@ def main() -> None:
     # Process each game file
     total_files = len(game_files)
     processed_files = 0
+    converted_cia_files = []  # Track successfully converted CIA files for CXI extraction
 
     for game_file in game_files:
         try:
@@ -61,12 +81,33 @@ def main() -> None:
             # Execute conversion
             service.convert(config)
             processed_files += 1
+            converted_cia_files.append(output_file)
 
         except Exception as e:
             print(f"Error converting {game_file}: {e}")
             continue
 
     print(f"Done converting {processed_files} out of {total_files} files.")
+
+    # Extract CXI from converted CIA files if --to-cxi was specified
+    if args.to_cxi and converted_cia_files:
+        print("\nExtracting CXI files...")
+        cxi_success = 0
+        for cia_file in converted_cia_files:
+            # Determine output directory for CXI extraction
+            output_dir = None
+            if args.output:
+                output_dir = args.output
+            else:
+                output_dir = os.path.dirname(os.path.abspath(cia_file))
+            success, msg = convert_cia_to_cxi(
+                ctrtool_path, cia_file, output_dir=output_dir, verbose=args.verbose
+            )
+            if success:
+                cxi_success += 1
+            else:
+                print(f"Error extracting CXI from {cia_file}: {msg}")
+        print(f"Done extracting {cxi_success} out of {len(converted_cia_files)} CXI files.")
 
 
 def _get_game_files(args) -> tuple[list[str], bool]:
