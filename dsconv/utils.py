@@ -6,7 +6,6 @@ without triggering the main script execution.
 """
 
 import argparse
-import glob
 import os
 import platform
 import shutil
@@ -420,15 +419,17 @@ def rename_contents_to_cxi(cia_path: str, output_dir: str | None = None) -> tupl
     if output_dir is None:
         output_dir = os.path.dirname(cia_path) or "."
 
-    # Look for contents.0000.* file
-    contents_pattern = os.path.join(output_dir, "contents.0000.*")
-    content_files = glob.glob(contents_pattern)
+    # Look for contents.0000.* file using pathlib for cross-platform compatibility
+    from pathlib import Path
+
+    output_path = Path(output_dir)
+    content_files = list(output_path.glob("contents.0000.*"))
 
     if not content_files:
         return False, f"No contents.0000.* file found in {output_dir}"
 
     # Use the first match (there should only be one)
-    content_file = content_files[0]
+    content_file = str(content_files[0])
 
     # Determine output CXI filename based on CIA filename
     cia_basename = os.path.splitext(os.path.basename(cia_path))[0]
