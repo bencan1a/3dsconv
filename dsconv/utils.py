@@ -86,7 +86,7 @@ def parse_args() -> argparse.Namespace:
         "--no-convert", "--noconvert", default=argparse.SUPPRESS, help=argparse.SUPPRESS
     )
 
-    # positional arguments - nargs="*" to allow batch mode without files
+    # positional arguments - nargs="*" allows batch mode (--batch) to work without game files
     parser.add_argument("game", nargs="*", help="Game file(s) to convert to CIA")
 
     # if no arguments are provided, display help message
