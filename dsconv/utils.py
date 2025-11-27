@@ -11,6 +11,7 @@ import platform
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 
 def parse_args() -> argparse.Namespace:
@@ -420,8 +421,6 @@ def rename_contents_to_cxi(cia_path: str, output_dir: str | None = None) -> tupl
         output_dir = os.path.dirname(cia_path) or "."
 
     # Look for contents.0000.* file using pathlib for cross-platform compatibility
-    from pathlib import Path
-
     output_path = Path(output_dir)
     content_files = list(output_path.glob("contents.0000.*"))
 

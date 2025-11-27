@@ -1,5 +1,6 @@
 """Refactored CLI implementation using modular architecture."""
 
+import os
 import sys
 
 from dsconv.cli.config_mapper import CLIConfigMapper
@@ -93,7 +94,15 @@ def main() -> None:
         print("\nExtracting CXI files...")
         cxi_success = 0
         for cia_file in converted_cia_files:
-            success, msg = convert_cia_to_cxi(ctrtool_path, cia_file, verbose=args.verbose)
+            # Determine output directory for CXI extraction
+            output_dir = None
+            if args.output:
+                output_dir = args.output
+            else:
+                output_dir = os.path.dirname(os.path.abspath(cia_file))
+            success, msg = convert_cia_to_cxi(
+                ctrtool_path, cia_file, output_dir=output_dir, verbose=args.verbose
+            )
             if success:
                 cxi_success += 1
             else:

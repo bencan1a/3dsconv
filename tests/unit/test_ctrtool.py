@@ -387,8 +387,9 @@ class TestConvertCiaToCxi:
             contents = tmp_path / "contents.0000.ncch"
             contents.write_bytes(b"mock content")
 
-            success, cxi_path = convert_cia_to_cxi(str(ctrtool), str(cia), verbose=True)
+            success, _ = convert_cia_to_cxi(str(ctrtool), str(cia), verbose=True)
 
+            assert success is True
             captured = capsys.readouterr()
             assert "Extracting CXI" in captured.out
             assert "Created CXI" in captured.out
