@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(venv/bin/pip install:*)",
+      "Bash(venv/bin/python:*)",
+      "Bash(venv/bin/pip:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(mypy:*)",
+      "Bash(venv/bin/mypy:*)",
+      "Bash(pytest:*)",
+      "Bash(python:*)",
+      "Bash(test:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
