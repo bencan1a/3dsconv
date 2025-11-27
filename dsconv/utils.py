@@ -6,7 +6,11 @@ without triggering the main script execution.
 """
 
 import argparse
+import glob
 import os
+import platform
+import shutil
+import subprocess
 import sys
 
 
@@ -68,6 +72,21 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Batch mode: convert all CCI files in the specified folder. "
         "Output defaults to input folder unless --output is specified.",
+    )
+
+    # CXI extraction via ctrtool
+    parser.add_argument(
+        "--to-cxi",
+        action="store_true",
+        help="Extract CXI from converted CIA files using ctrtool. "
+        "Requires ctrtool to be installed and available in PATH.",
+    )
+
+    parser.add_argument(
+        "--ctrtool-path",
+        metavar="path-to-ctrtool",
+        default=os.environ.get("CTRTOOL_PATH"),
+        help="Path to ctrtool executable. If not specified, searches PATH.",
     )
 
     # deprecated arguments; we want to print out a message on this
@@ -263,6 +282,208 @@ def get_slot0x2c_key_from_prod_keys(prod_keys_path: str) -> int:
     key_int = int(key_hex, 16)
 
     return key_int
+
+
+def find_ctrtool(custom_path: str | None = None) -> str | None:
+    """
+    Find the ctrtool executable.
+
+    Searches for ctrtool in the following order:
+    1. Custom path if provided
+    2. CTRTOOL_PATH environment variable
+    3. System PATH
+
+    On Windows, looks for ctrtool.exe. On Linux/macOS, looks for ctrtool.
+
+    Args:
+        custom_path: Optional custom path to ctrtool
+
+    Returns:
+        Path to ctrtool executable if found, None otherwise
+    """
+    # Determine the executable name based on platform
+    if platform.system() == "Windows":
+        exe_names = ["ctrtool.exe", "ctrtool"]
+    else:
+        exe_names = ["ctrtool", "ctrtool.exe"]
+
+    # Check custom path first
+    if custom_path:
+        if os.path.isfile(custom_path):
+            return custom_path
+        # If custom path is a directory, look for ctrtool inside
+        if os.path.isdir(custom_path):
+            for exe_name in exe_names:
+                full_path = os.path.join(custom_path, exe_name)
+                if os.path.isfile(full_path):
+                    return full_path
+        return None
+
+    # Check CTRTOOL_PATH environment variable
+    env_path = os.environ.get("CTRTOOL_PATH")
+    if env_path:
+        if os.path.isfile(env_path):
+            return env_path
+        if os.path.isdir(env_path):
+            for exe_name in exe_names:
+                full_path = os.path.join(env_path, exe_name)
+                if os.path.isfile(full_path):
+                    return full_path
+
+    # Search in system PATH
+    for exe_name in exe_names:
+        found = shutil.which(exe_name)
+        if found:
+            return found
+
+    return None
+
+
+def run_ctrtool_extract_contents(
+    ctrtool_path: str, cia_path: str, output_dir: str | None = None
+) -> tuple[bool, str]:
+    """
+    Run ctrtool to extract contents from a CIA file.
+
+    Executes: ctrtool --contents=<output_dir> --intype=cia "<cia_path>"
+
+    Args:
+        ctrtool_path: Path to ctrtool executable
+        cia_path: Path to the CIA file to extract
+        output_dir: Directory to output contents to. If None, uses CIA's directory.
+
+    Returns:
+        Tuple of (success, message). success is True if extraction succeeded,
+        message contains either success info or error details.
+    """
+    if not os.path.isfile(cia_path):
+        return False, f"CIA file not found: {cia_path}"
+
+    if not os.path.isfile(ctrtool_path):
+        return False, f"ctrtool not found: {ctrtool_path}"
+
+    # Default output directory to CIA's directory
+    if output_dir is None:
+        output_dir = os.path.dirname(cia_path) or "."
+
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Build the command
+    # ctrtool outputs contents as "contents.XXXX.<ext>" where XXXX is the content index
+    contents_prefix = os.path.join(output_dir, "contents")
+    cmd = [
+        ctrtool_path,
+        f"--contents={contents_prefix}",
+        "--intype=cia",
+        cia_path,
+    ]
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=120,  # 2 minute timeout
+        )
+
+        if result.returncode != 0:
+            error_msg = result.stderr.strip() or result.stdout.strip() or "Unknown error"
+            return False, f"ctrtool failed: {error_msg}"
+
+        return True, f"Contents extracted to {output_dir}"
+
+    except subprocess.TimeoutExpired:
+        return False, "ctrtool timed out after 120 seconds"
+    except FileNotFoundError:
+        return False, f"ctrtool executable not found: {ctrtool_path}"
+    except OSError as e:
+        return False, f"Failed to run ctrtool: {e}"
+
+
+def rename_contents_to_cxi(cia_path: str, output_dir: str | None = None) -> tuple[bool, str]:
+    """
+    Rename contents.0000.* file to <basename>.cxi.
+
+    After ctrtool extracts contents from a CIA, the main game content
+    is typically in contents.0000.<ext>. This function renames it to
+    match the original filename with a .cxi extension.
+
+    Args:
+        cia_path: Path to the original CIA file (used to determine output name)
+        output_dir: Directory where contents were extracted. If None, uses CIA's directory.
+
+    Returns:
+        Tuple of (success, message). success is True if rename succeeded,
+        message contains either the new CXI path or error details.
+    """
+    if output_dir is None:
+        output_dir = os.path.dirname(cia_path) or "."
+
+    # Look for contents.0000.* file
+    contents_pattern = os.path.join(output_dir, "contents.0000.*")
+    content_files = glob.glob(contents_pattern)
+
+    if not content_files:
+        return False, f"No contents.0000.* file found in {output_dir}"
+
+    # Use the first match (there should only be one)
+    content_file = content_files[0]
+
+    # Determine output CXI filename based on CIA filename
+    cia_basename = os.path.splitext(os.path.basename(cia_path))[0]
+    cxi_path = os.path.join(output_dir, f"{cia_basename}.cxi")
+
+    try:
+        # Remove existing CXI file if present
+        if os.path.exists(cxi_path):
+            os.remove(cxi_path)
+
+        # Rename contents file to CXI
+        os.rename(content_file, cxi_path)
+        return True, cxi_path
+
+    except OSError as e:
+        return False, f"Failed to rename {content_file} to {cxi_path}: {e}"
+
+
+def convert_cia_to_cxi(
+    ctrtool_path: str, cia_path: str, output_dir: str | None = None, verbose: bool = False
+) -> tuple[bool, str]:
+    """
+    Convert a CIA file to CXI using ctrtool.
+
+    This is a high-level function that:
+    1. Runs ctrtool to extract contents from the CIA
+    2. Renames the extracted contents.0000.* file to <basename>.cxi
+
+    Args:
+        ctrtool_path: Path to ctrtool executable
+        cia_path: Path to the CIA file to convert
+        output_dir: Directory for output. If None, uses CIA's directory.
+        verbose: If True, print progress messages
+
+    Returns:
+        Tuple of (success, message). success is True if conversion succeeded,
+        message contains either the CXI path or error details.
+    """
+    if verbose:
+        print(f"Extracting CXI from {cia_path}...")
+
+    # Step 1: Extract contents
+    success, msg = run_ctrtool_extract_contents(ctrtool_path, cia_path, output_dir)
+    if not success:
+        return False, msg
+
+    # Step 2: Rename to CXI
+    success, cxi_path = rename_contents_to_cxi(cia_path, output_dir)
+    if not success:
+        return False, cxi_path
+
+    if verbose:
+        print(f"Created CXI: {cxi_path}")
+
+    return True, cxi_path
 
 
 # Note: print_v() and v() depend on global args and will be tested via mocking
