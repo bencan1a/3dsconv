@@ -26,13 +26,17 @@ class CLIConfigMapper:
 
     @staticmethod
     def map_to_conversion_config(
-        args: argparse.Namespace, input_file: str | None = None
+        args: argparse.Namespace,
+        input_file: str | None = None,
+        batch_folder: str | None = None,
     ) -> ConversionConfig:
         """Convert CLI args to conversion configuration.
 
         Args:
             args: Parsed command-line arguments from parse_args()
             input_file: Optional specific input file to use. If None, uses args.game[0]
+            batch_folder: Optional batch folder path. If provided and no --output
+                         is specified, output files will be placed in this folder.
 
         Returns:
             ConversionConfig object with all settings from CLI
@@ -50,7 +54,7 @@ class CLIConfigMapper:
         assert input_file is not None
 
         # Determine output file path
-        output_file = CLIConfigMapper._determine_output_path(input_file, args.output)
+        output_file = CLIConfigMapper._determine_output_path(input_file, args.output, batch_folder)
 
         # Create appropriate key provider
         key_provider = CLIConfigMapper._create_key_provider(args)
@@ -82,7 +86,7 @@ class CLIConfigMapper:
         """
         # Lazy import to reduce initial module loading time
         from dsconv.crypto.key_provider import Boot9KeyProvider, ProdKeysKeyProvider
-        
+
         # Priority 1: Explicit prod.keys path
         if hasattr(args, "prod_keys") and args.prod_keys:
             # Check if file exists before creating provider
@@ -118,7 +122,7 @@ class CLIConfigMapper:
         """
         # Lazy import to reduce initial module loading time
         from dsconv.crypto.key_provider import Boot9KeyProvider, ProdKeysKeyProvider
-        
+
         # Try prod.keys locations first
         prod_keys_paths = [
             "prod.keys",
@@ -153,12 +157,16 @@ class CLIConfigMapper:
         return None
 
     @staticmethod
-    def _determine_output_path(input_file: str, output_dir: str) -> str:
+    def _determine_output_path(
+        input_file: str, output_dir: str, batch_folder: str | None = None
+    ) -> str:
         """Determine output CIA file path.
 
         Args:
             input_file: Path to input CCI file
-            output_dir: Output directory (empty string means current directory)
+            output_dir: Output directory from --output option (empty string means not specified)
+            batch_folder: Optional batch folder path. Used as output directory
+                         when output_dir is not specified and batch mode is active.
 
         Returns:
             Full path to output CIA file
@@ -171,8 +179,11 @@ class CLIConfigMapper:
 
         # Determine output directory
         if output_dir:
-            # Use specified output directory
+            # Use explicitly specified output directory
             return os.path.join(output_dir, output_filename)
+        elif batch_folder:
+            # In batch mode without --output, use the batch folder as output directory
+            return os.path.join(batch_folder, output_filename)
         else:
             # Use current directory
             return output_filename

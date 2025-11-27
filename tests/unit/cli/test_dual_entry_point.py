@@ -102,14 +102,17 @@ class TestRefactoredMain:
             # Arrange - mock parse_args to return minimal valid args
             mock_args = MagicMock()
             mock_args.game = []  # Empty list means no files to process
+            mock_args.batch = None  # No batch mode
             mock_args.use_deprecated = False
             mock_parse.return_value = mock_args
 
-            # Act
-            main()
+            # Act - should exit with error because no input files
+            with pytest.raises(SystemExit) as exc_info:
+                main()
 
             # Assert
             mock_parse.assert_called_once()
+            assert exc_info.value.code == 1
 
     def test_main_handles_deprecated_options(self):
         """Test that refactored main handles deprecated options gracefully."""
@@ -140,6 +143,7 @@ class TestRefactoredMain:
                     # Arrange
                     mock_args = MagicMock()
                     mock_args.game = ["game1.cci", "game2.cci"]
+                    mock_args.batch = None
                     mock_args.use_deprecated = False
                     mock_parse.return_value = mock_args
 
@@ -168,6 +172,7 @@ class TestRefactoredMain:
                 # Arrange
                 mock_args = MagicMock()
                 mock_args.game = ["game1.cci", "game2.cci"]
+                mock_args.batch = None
                 mock_args.use_deprecated = False
                 mock_parse.return_value = mock_args
 

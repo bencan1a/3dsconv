@@ -314,3 +314,83 @@ class TestParseArgs:
         assert args.boot9 == "/path/to/boot9.bin"
         assert args.prod_keys == "/path/to/prod.keys"
         assert args.game == ["game.cci"]
+
+    def test_parse_args_batch_mode(self, monkeypatch):
+        """Test parsing with --batch option."""
+        # Arrange
+        test_args = ["3dsconv.py", "--batch", "/path/to/folder"]
+        monkeypatch.setattr(sys, "argv", test_args)
+
+        # Act
+        args = parse_args()
+
+        # Assert
+        assert args.batch == "/path/to/folder"
+        assert args.game == []
+
+    def test_parse_args_batch_mode_with_output(self, monkeypatch):
+        """Test parsing with --batch and --output options."""
+        # Arrange
+        test_args = ["3dsconv.py", "--batch", "/input/folder", "-o", "/output/folder"]
+        monkeypatch.setattr(sys, "argv", test_args)
+
+        # Act
+        args = parse_args()
+
+        # Assert
+        assert args.batch == "/input/folder"
+        assert args.output == "/output/folder"
+        assert args.game == []
+
+    def test_parse_args_batch_mode_with_other_options(self, monkeypatch):
+        """Test parsing --batch with all other options."""
+        # Arrange
+        test_args = [
+            "3dsconv.py",
+            "--batch",
+            "/path/to/folder",
+            "-o",
+            "output_dir",
+            "--overwrite",
+            "--ignore-bad-hashes",
+            "--verbose",
+        ]
+        monkeypatch.setattr(sys, "argv", test_args)
+
+        # Act
+        args = parse_args()
+
+        # Assert
+        assert args.batch == "/path/to/folder"
+        assert args.output == "output_dir"
+        assert args.overwrite is True
+        assert args.ignore_bad_hashes is True
+        assert args.verbose is True
+        assert args.game == []
+
+    def test_parse_args_batch_default_none(self, monkeypatch):
+        """Test that --batch defaults to None."""
+        # Arrange
+        test_args = ["3dsconv.py", "game.cci"]
+        monkeypatch.setattr(sys, "argv", test_args)
+
+        # Act
+        args = parse_args()
+
+        # Assert
+        assert args.batch is None
+        assert args.game == ["game.cci"]
+
+    def test_parse_args_no_game_no_batch_allowed(self, monkeypatch):
+        """Test that parsing succeeds without game args (validation happens later)."""
+        # Arrange
+        test_args = ["3dsconv.py", "--verbose"]
+        monkeypatch.setattr(sys, "argv", test_args)
+
+        # Act
+        args = parse_args()
+
+        # Assert
+        assert args.game == []
+        assert args.batch is None
+        assert args.verbose is True

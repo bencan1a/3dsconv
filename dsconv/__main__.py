@@ -20,6 +20,14 @@ def main() -> None:
     # Check for --legacy flag BEFORE full argument parsing
     # This allows legacy implementation to handle all args independently
     if "--legacy" in sys.argv or "--use-legacy" in sys.argv:
+        # Check for --batch flag which is not supported in legacy mode
+        if "--batch" in sys.argv:
+            print(
+                "Error: --batch is not supported with --legacy. "
+                "Batch mode is only available in the modern implementation."
+            )
+            sys.exit(1)
+
         # Remove the flag from argv
         sys.argv = [arg for arg in sys.argv if arg not in ("--legacy", "--use-legacy")]
 
