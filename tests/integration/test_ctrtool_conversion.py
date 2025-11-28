@@ -5,9 +5,9 @@ This module tests the complete workflow of converting CIA files to CXI
 using ctrtool integration in the CLI.
 """
 
+import os
 import subprocess
 import sys
-import os
 from pathlib import Path
 
 import pytest

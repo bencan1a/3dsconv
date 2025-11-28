@@ -63,9 +63,9 @@ _ticket_tmd_cache: bytes | None = None
 
 def get_ticket_tmd_template() -> bytes:
     """Get decompressed ticket/TMD template.
-    
+
     Returns the ticket/TMD template, decompressing and caching it on first access.
-    
+
     Returns:
         Decompressed ticket/TMD template bytes
     """

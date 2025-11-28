@@ -2,8 +2,7 @@
 
 import argparse
 import os
-from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -138,7 +137,7 @@ class TestMapToConversionConfig:
         # Act
         with patch.object(Boot9KeyProvider, "__init__", return_value=None):
             with patch.object(Boot9KeyProvider, "get_original_ncch_key", return_value=0x123):
-                config = CLIConfigMapper.map_to_conversion_config(minimal_args)
+                CLIConfigMapper.map_to_conversion_config(minimal_args)
 
         # Assert - we can't check isinstance after patching, so just check it's not None
         # In real usage, this would be Boot9KeyProvider
@@ -243,7 +242,7 @@ class TestCreateKeyProvider:
 
         # Act
         with patch.object(Boot9KeyProvider, "__init__", return_value=None):
-            provider = CLIConfigMapper._create_key_provider(args)
+            CLIConfigMapper._create_key_provider(args)
             # Provider is created but we can't check type after patching
 
     def test_create_with_boot9_dev_keys(self, tmp_path):
@@ -259,7 +258,7 @@ class TestCreateKeyProvider:
         )
 
         # Act
-        with patch.object(Boot9KeyProvider, "__init__", return_value=None) as mock_init:
+        with patch.object(Boot9KeyProvider, "__init__", return_value=None):
             CLIConfigMapper._create_key_provider(args)
             # Check that Boot9KeyProvider was called with dev_keys=True
 
@@ -307,7 +306,7 @@ class TestCreateKeyProvider:
 
         # Act
         with patch.object(Boot9KeyProvider, "__init__", return_value=None):
-            provider = CLIConfigMapper._create_key_provider(args)
+            CLIConfigMapper._create_key_provider(args)
             # boot9 should be tried after prod_keys fails
 
     def test_create_with_nonexistent_boot9_tries_auto_detect(self):
@@ -323,7 +322,7 @@ class TestCreateKeyProvider:
         with patch.object(
             CLIConfigMapper, "_auto_detect_key_provider", return_value=None
         ) as mock_auto:
-            provider = CLIConfigMapper._create_key_provider(args)
+            CLIConfigMapper._create_key_provider(args)
 
         # Assert
         mock_auto.assert_called_once()
@@ -456,9 +455,9 @@ class TestAutoDetectKeyProvider:
         boot9_file.write_bytes(b"\x00" * 0x10000)
 
         # Act
-        with patch.object(Boot9KeyProvider, "__init__", return_value=None) as mock_init:
+        with patch.object(Boot9KeyProvider, "__init__", return_value=None):
             with patch.object(Boot9KeyProvider, "get_original_ncch_key", return_value=0x123):
-                provider = CLIConfigMapper._auto_detect_key_provider(dev_keys=True)
+                CLIConfigMapper._auto_detect_key_provider(dev_keys=True)
 
     def test_auto_detect_tries_all_boot9_locations(self, tmp_path):
         """Test that auto-detect tries all boot9 file locations in order."""

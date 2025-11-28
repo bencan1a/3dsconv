@@ -75,6 +75,7 @@ def main() -> None:
             print(f"[{file_index}/{total_files}] Processing: {filename}")
             print(f"{'='*70}")
 
+        service = None
         try:
             # Map CLI args to domain configuration
             # For batch mode, use batch folder as default output if no --output specified
@@ -96,17 +97,21 @@ def main() -> None:
             # Report success
             if is_batch_mode or total_files > 1:
                 output_filename = os.path.basename(output_file)
-                print(f"\n✓ Successfully converted: {filename} -> {output_filename}")
+                print(f"\n[OK] Successfully converted: {filename} -> {output_filename}")
 
         except Exception as e:
             error_msg = str(e)
             failed_files.append((filename, error_msg))
             if is_batch_mode or total_files > 1:
-                print(f"\n✗ Failed: {filename}")
+                print(f"\n[FAILED] {filename}")
                 print(f"  Error: {error_msg}")
             else:
                 print(f"Error converting {game_file}: {e}")
             continue
+        finally:
+            # Always close file handles to prevent file locking issues (especially on Windows)
+            if service is not None:
+                service.close()
 
     # Print summary
     print(f"\n{'='*70}")
@@ -117,12 +122,13 @@ def main() -> None:
     print(f"Failed: {len(failed_files)}")
 
     if failed_files:
-        print(f"\nFailed files:")
+        print("\nFailed files:")
         for failed_file, error in failed_files:
             print(f"  • {failed_file}")
             print(f"    Reason: {error}")
 
     print(f"{'='*70}")
+    print(f"Done converting {processed_files} out of {total_files} files.")
 
     # Extract CXI from converted CIA files if --to-cxi was specified
     if args.to_cxi and converted_cia_files and ctrtool_path is not None:

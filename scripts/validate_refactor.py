@@ -22,11 +22,12 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 
 def compute_hash(file_path: Path) -> tuple[str, str]:
     """Compute MD5 and SHA256 of a file.
-    
+
     MD5 is used here for integrity verification and comparison of known output files,
     not for cryptographic security. The script compares both MD5 and SHA256 to validate
     that refactored code produces identical output to the legacy implementation.
@@ -42,13 +43,13 @@ def compute_hash(file_path: Path) -> tuple[str, str]:
     return md5.hexdigest(), sha256.hexdigest()
 
 
-def validate_conversion(input_file: str, output_dir: Path) -> dict:
+def validate_conversion(input_file: str, output_dir: Path) -> dict[str, Any]:
     """Run both implementations and compare outputs.
 
     Returns:
         dict with keys: input, legacy, refactored, match, differences
     """
-    results = {
+    results: dict[str, Any] = {
         "input": input_file,
         "legacy": {},
         "refactored": {},
@@ -129,7 +130,7 @@ def validate_conversion(input_file: str, output_dir: Path) -> dict:
         print(f"  ✅ MATCH: Outputs are identical (legacy: {legacy_time:.2f}s, refactored: {refactored_time:.2f}s)")
     else:
         results["match"] = False
-        print(f"  ❌ MISMATCH: Outputs differ")
+        print("  ❌ MISMATCH: Outputs differ")
 
         # Find first difference for debugging
         with open(legacy_cia, 'rb') as f1, open(refactored_cia, 'rb') as f2:

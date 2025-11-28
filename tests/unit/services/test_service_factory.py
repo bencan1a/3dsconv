@@ -4,14 +4,11 @@ This module tests the ServiceFactory class which creates fully configured
 ConversionService instances with all dependencies wired together.
 """
 
-import os
-import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
-from dsconv.services.conversion_config import ConversionConfig
 from dsconv.services.service_factory import ServiceFactory
 
 
@@ -75,7 +72,7 @@ class TestServiceFactory:
         assert not output_dir.exists()
 
         # Act
-        service = ServiceFactory.create_conversion_service(
+        ServiceFactory.create_conversion_service(
             str(input_file), str(output_file), config
         )
 
@@ -195,7 +192,7 @@ class TestServiceFactory:
         )
 
         # Assert
-        assert service.progress_reporter.verbose is True
+        assert service.progress_reporter.verbose is True  # type: ignore[attr-defined]
 
 
 class TestServiceFactoryIntegration:
@@ -249,5 +246,5 @@ class TestServiceFactoryIntegration:
         # Assert
         assert service.decryption_service is not None
         assert service.hash_validator.ignore_bad_hashes is True
-        assert service.progress_reporter.verbose is True
+        assert service.progress_reporter.verbose is True  # type: ignore[attr-defined]
         assert Path(output_file).parent.exists()

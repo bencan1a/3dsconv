@@ -100,6 +100,31 @@ class ConversionService:
         self.hash_validator = hash_validator
         self.progress_reporter = progress_reporter
 
+    def close(self) -> None:
+        """Close all open file handles.
+
+        This method should be called after conversion is complete to ensure
+        file handles are released immediately, especially important on Windows
+        where file locking can prevent other operations.
+
+        This closes both the input file (via ncch_reader) and output file
+        (via cia_writer). All readers share the same underlying file handle,
+        so closing one closes all.
+        """
+        # Close input file (all readers share the same BinaryReader)
+        if hasattr(self.ncch_reader, 'reader') and hasattr(self.ncch_reader.reader, 'file'):
+            try:
+                self.ncch_reader.reader.file.close()
+            except Exception:
+                pass  # Ignore errors on close
+
+        # Close output file
+        if hasattr(self.cia_writer, 'writer') and hasattr(self.cia_writer.writer, 'file'):
+            try:
+                self.cia_writer.writer.file.close()
+            except Exception:
+                pass  # Ignore errors on close
+
     def convert(self, config: ConversionConfig) -> None:
         """Execute conversion from CCI to CIA.
 

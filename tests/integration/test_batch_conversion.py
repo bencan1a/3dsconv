@@ -274,7 +274,7 @@ class TestBatchConversionIntegration:
 
         # Assert - Should continue and convert the valid file
         assert result.returncode == 0
-        assert "Error converting" in result.stdout
+        assert "[FAILED]" in result.stdout or "Error:" in result.stdout
         # At least the valid file should be converted
         output_files = list(batch_folder.glob("*.cia"))
         assert len(output_files) >= 1

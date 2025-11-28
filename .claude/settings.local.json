@@ -12,7 +12,8 @@
       "Bash(venv/bin/mypy:*)",
       "Bash(pytest:*)",
       "Bash(python:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(ruff check:*)"
     ],
     "deny": [],
     "ask": []

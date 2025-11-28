@@ -77,7 +77,7 @@ class PyAESAdapter(IAESCipher):
             raise ValueError("AES key must be exactly 16 bytes")
 
         try:
-            import pyaes  # type: ignore[import-untyped]
+            import pyaes  # type: ignore[import-not-found]
 
             self._pyaes = pyaes
         except ImportError as e:
