@@ -46,7 +46,7 @@ dev = [
     "black>=23.0.0",
     "ruff>=0.1.0",
     "mypy>=1.0.0",
-    "nodejs-bin>=18.0.0",
+    "bandit[toml]>=1.7.0",
 ]
 
 [tool.setuptools]
@@ -130,3 +130,7 @@ markers = [
     "slow: Tests that take longer to run (e.g., full file conversions)",
     "integration: Integration tests that test multiple components together",
 ]
+
+[tool.bandit]
+exclude_dirs = ["tests", "venv", ".venv", "build", "dist"]
+skips = ["B101"]  # Skip assert_used check (commonly used in tests)

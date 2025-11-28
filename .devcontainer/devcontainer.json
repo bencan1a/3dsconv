@@ -14,13 +14,20 @@
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "charliermarsh.ruff"
+        "charliermarsh.ruff",
+        "ms-python.bandit",
+        "anthropic.claude-code",
+        "GitHub.vscode-pull-request-github",
+        "github.vscode-github-actions",
+        "dbaeumer.vscode-eslint",
+        "GitHub.copilot-chat"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
         "python.linting.enabled": true,
         "python.linting.pylintEnabled": false,
         "python.linting.ruffEnabled": true,
+        "python.linting.banditEnabled": true,
         "python.formatting.provider": "ruff",
         "editor.formatOnSave": true,
         "editor.codeActionsOnSave": {
@@ -30,12 +37,16 @@
           "editor.defaultFormatter": "charliermarsh.ruff",
           "editor.tabSize": 4,
           "editor.insertSpaces": true
-        }
+        },
+        "bandit.args": [
+          "-c",
+          "pyproject.toml"
+        ]
       }
     }
   },
 
-  "postCreateCommand": "pip install -e '.[dev]'",
+  "postCreateCommand": "pip install --upgrade pip && pip install -e '.[dev]'",
 
   "remoteUser": "vscode"
 }
