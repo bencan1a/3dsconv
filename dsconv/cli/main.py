@@ -63,8 +63,18 @@ def main() -> None:
     total_files = len(game_files)
     processed_files = 0
     converted_cia_files = []  # Track successfully converted CIA files for CXI extraction
+    failed_files = []  # Track failed conversions with error messages
 
-    for game_file in game_files:
+    for file_index, game_file in enumerate(game_files, start=1):
+        # Get the filename for display
+        filename = os.path.basename(game_file)
+
+        # Show file-level progress in batch mode
+        if is_batch_mode or total_files > 1:
+            print(f"\n{'='*70}")
+            print(f"[{file_index}/{total_files}] Processing: {filename}")
+            print(f"{'='*70}")
+
         try:
             # Map CLI args to domain configuration
             # For batch mode, use batch folder as default output if no --output specified
@@ -83,11 +93,36 @@ def main() -> None:
             processed_files += 1
             converted_cia_files.append(output_file)
 
+            # Report success
+            if is_batch_mode or total_files > 1:
+                output_filename = os.path.basename(output_file)
+                print(f"\n✓ Successfully converted: {filename} -> {output_filename}")
+
         except Exception as e:
-            print(f"Error converting {game_file}: {e}")
+            error_msg = str(e)
+            failed_files.append((filename, error_msg))
+            if is_batch_mode or total_files > 1:
+                print(f"\n✗ Failed: {filename}")
+                print(f"  Error: {error_msg}")
+            else:
+                print(f"Error converting {game_file}: {e}")
             continue
 
-    print(f"Done converting {processed_files} out of {total_files} files.")
+    # Print summary
+    print(f"\n{'='*70}")
+    print("CONVERSION SUMMARY")
+    print(f"{'='*70}")
+    print(f"Total files: {total_files}")
+    print(f"Successful: {processed_files}")
+    print(f"Failed: {len(failed_files)}")
+
+    if failed_files:
+        print(f"\nFailed files:")
+        for failed_file, error in failed_files:
+            print(f"  • {failed_file}")
+            print(f"    Reason: {error}")
+
+    print(f"{'='*70}")
 
     # Extract CXI from converted CIA files if --to-cxi was specified
     if args.to_cxi and converted_cia_files and ctrtool_path is not None:

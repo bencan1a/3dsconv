@@ -42,15 +42,63 @@ class ConsoleProgressReporter(IProgressReporter):
 
     This implementation uses print statements to display progress
     to the console, with optional verbose mode for stage reporting.
+    Supports batch mode with file-level progress tracking.
     """
 
-    def __init__(self, verbose: bool = False):
+    def __init__(
+        self,
+        verbose: bool = False,
+        batch_mode: bool = False,
+        current_file: int = 1,
+        total_files: int = 1,
+        filename: str = "",
+    ):
         """Initialize console progress reporter.
 
         Args:
             verbose: If True, report stage changes. If False, only show progress bars.
+            batch_mode: If True, show file-level batch progress information
+            current_file: Current file number (1-indexed) in batch mode
+            total_files: Total number of files in batch mode
+            filename: Name of current file being processed
         """
         self.verbose = verbose
+        self.batch_mode = batch_mode
+        self.current_file = current_file
+        self.total_files = total_files
+        self.filename = filename
+
+    def report_file_start(self, filename: str, current_file: int, total_files: int) -> None:
+        """Report the start of processing a file in batch mode.
+
+        Args:
+            filename: Name of the file being processed
+            current_file: Current file number (1-indexed)
+            total_files: Total number of files to process
+        """
+        self.filename = filename
+        self.current_file = current_file
+        self.total_files = total_files
+        print(f"\n[{current_file}/{total_files}] Processing: {filename}")
+
+    def report_file_success(self, filename: str, output_path: str) -> None:
+        """Report successful conversion of a file.
+
+        Args:
+            filename: Name of the file that was converted
+            output_path: Path to the output CIA file
+        """
+        print(f"✓ Successfully converted: {filename} -> {output_path}")
+
+    def report_file_error(self, filename: str, error: str) -> None:
+        """Report failed conversion of a file.
+
+        Args:
+            filename: Name of the file that failed
+            error: Error message
+        """
+        print(f"✗ Failed: {filename}")
+        print(f"  Error: {error}")
 
     def report_stage(self, stage: str) -> None:
         """Report current conversion stage to console.

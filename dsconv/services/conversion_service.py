@@ -141,6 +141,10 @@ class ConversionService:
             ncch_header, container.title_id, config, game_cxi_offset
         )
 
+        # Report encryption status
+        encryption_status = self._get_encryption_status_message(encryption_ctx, config)
+        print(f"Converting ({encryption_status})...")
+
         # Read KeyY if needed for encryption
         key_y = None
         if encryption_ctx.needs_decryption and not encryption_ctx.is_zerokey:
@@ -161,6 +165,29 @@ class ConversionService:
         self._write_cia(
             container, game_partition, ncch_header, extheader, extheader_hash, icon, encryption_ctx
         )
+
+    def _get_encryption_status_message(
+        self, encryption_ctx: EncryptionContext, config: ConversionConfig
+    ) -> str:
+        """Get human-readable encryption status message.
+
+        Args:
+            encryption_ctx: Encryption context
+            config: Conversion configuration
+
+        Returns:
+            Human-readable string describing encryption status
+        """
+        if config.ignore_encryption:
+            return "ignore encryption"
+        elif encryption_ctx.is_decrypted:
+            return "decrypted"
+        elif encryption_ctx.is_zerokey:
+            return "zerokey encrypted"
+        elif encryption_ctx.is_original_ncch:
+            return "encrypted"
+        else:
+            return "unknown encryption"
 
     def _determine_encryption(
         self,
