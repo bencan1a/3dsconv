@@ -146,6 +146,13 @@ def main() -> None:
             )
             if success:
                 cxi_success += 1
+                # Delete interim CIA file after successful CXI extraction
+                try:
+                    if args.verbose:
+                        print(f"Deleting interim CIA file: {cia_file}")
+                    os.remove(cia_file)
+                except OSError as e:
+                    print(f"Warning: Failed to delete interim CIA file {cia_file}: {e}")
             else:
                 print(f"Error extracting CXI from {cia_file}: {msg}")
         print(f"Done extracting {cxi_success} out of {len(converted_cia_files)} CXI files.")

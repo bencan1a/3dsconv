@@ -291,7 +291,8 @@ def find_ctrtool(custom_path: str | None = None) -> str | None:
     Searches for ctrtool in the following order:
     1. Custom path if provided
     2. CTRTOOL_PATH environment variable
-    3. System PATH
+    3. Bundled ctrtool in package (dsconv/bin/)
+    4. System PATH
 
     On Windows, looks for ctrtool.exe. On Linux/macOS, looks for ctrtool.
 
@@ -329,6 +330,19 @@ def find_ctrtool(custom_path: str | None = None) -> str | None:
                 full_path = os.path.join(env_path, exe_name)
                 if os.path.isfile(full_path):
                     return full_path
+
+    # Check bundled ctrtool in package
+    try:
+        package_dir = os.path.dirname(os.path.abspath(__file__))
+        bin_dir = os.path.join(package_dir, "bin")
+        if os.path.isdir(bin_dir):
+            for exe_name in exe_names:
+                bundled_path = os.path.join(bin_dir, exe_name)
+                if os.path.isfile(bundled_path):
+                    return bundled_path
+    except Exception:
+        # If we can't determine package location, continue to PATH search
+        pass
 
     # Search in system PATH
     for exe_name in exe_names:

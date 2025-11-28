@@ -227,6 +227,9 @@ class TestCtrtoolRealConversion:
         cxi = tmp_path / "game.cxi"
         if cxi.exists():
             assert cxi.stat().st_size > 0
+            # Verify CIA file was deleted after successful CXI extraction
+            cia = tmp_path / "game.cia"
+            assert not cia.exists(), "CIA file should be deleted after successful CXI extraction"
 
     def test_batch_cci_to_cxi_workflow(self, test_ccis_path, ctrtool_path, tmp_path, project_root):
         """Test batch workflow: multiple CCIs -> CIAs -> CXIs."""
@@ -267,12 +270,17 @@ class TestCtrtoolRealConversion:
         # Check conversion message
         assert "Done converting" in result.stdout
 
-        # Verify CIA files were created
-        cia_files = list(batch_folder.glob("*.cia"))
-        assert len(cia_files) == 2
-
         # Check for CXI extraction message
         if "Done extracting" in result.stdout:
             # If extraction happened, CXI files should exist
             cxi_files = list(batch_folder.glob("*.cxi"))
             assert len(cxi_files) >= 1
+            # CIA files should have been deleted after successful CXI extraction
+            cia_files = list(batch_folder.glob("*.cia"))
+            assert (
+                len(cia_files) == 0
+            ), "CIA files should be deleted after successful CXI extraction"
+        else:
+            # If CXI extraction didn't happen, CIA files should still exist
+            cia_files = list(batch_folder.glob("*.cia"))
+            assert len(cia_files) == 2
